@@ -4,6 +4,7 @@ import numpy as np
 # import matplotlib
 # matplotlib.rc('axes.formatter', useoffset=False)
 import matplotlib.pyplot as plt
+import scipy.signal as signal
 
 import seaborn as sns
 
@@ -92,8 +93,12 @@ dx2 = 1.0*dx
 
 # T = 1
 for t in range(T):
-    tau[0, t] = np.exp(-0.4 * dt * t)
-    tau[1, t] = np.exp(-0.5 * dt * t)
+    if not t % 50:
+        tau[:, t] = np.random.uniform(-1,1,(2,))
+    else:
+        tau[:, t] = tau[:, t-1]
+    # tau[0, t] = np.exp(-0.4 * dt * t)
+    # tau[1, t] = np.exp(-0.5 * dt * t)
     dx[:, t] = rk4_dx(x[:,t], tau[:, t], params, dt)
     dx2[:, t] = robot_manipulator_2d(x[:,t], tau[:, t], params)
     x[:,t+1] = x[:,t] + dt * dx[:, t]
@@ -141,19 +146,28 @@ for t in range(1,T):
     q[:,t+1] = q[:,t] + s * add
 
 # forward difference
-dq = (q[:,1:]-q[:,:-1])/dt
-ddq = (dq[:,1:]-dq[:,:-1])/dt
+# dq = (q[:,1:]-q[:,:-1])/dt
+# ddq = (dq[:,1:]-dq[:,:-1])/dt
+#
+# stan_data = {
+#     'N':T-1,
+#     'q':q[:, :-2],
+#     'dq':dq[:, :-1],
+#     'tau':tau[:, :-1],
+#     'ddq':ddq[:, :],
+#     'g':g
+# }
 
-
-
-# dddqb
+# alternate savitzky-golay filter
+dq = signal.savgol_filter(q, 51, 5, deriv=1, delta=dt, axis=1)
+ddq = signal.savgol_filter(q, 51, 5, deriv=2, delta=dt, axis=1)
 
 stan_data = {
-    'N':T-1,
-    'q':q[:, :-2],
+    'N':T,
+    'q':q[:, :-1],
     'dq':dq[:, :-1],
-    'tau':tau[:, :-1],
-    'ddq':ddq[:, :],
+    'tau':tau[:, :],
+    'ddq':ddq[:, :-1],
     'g':g
 }
 
@@ -222,3 +236,22 @@ plt.show()
 
 plt.hist(r_traces)
 plt.show()
+
+nu = traces['nu']
+plt.hist(nu, bins=30)
+plt.show()
+
+
+ddq1hat = traces['ddq1hat']
+
+plt.plot(ddq1hat.mean() - ddq[0,:-1])
+plt.show()
+
+# bias = traces['bias']
+#
+# plt.subplot(2,1,1)
+# plt.hist(bias[:, 0], bins=30)
+#
+# plt.subplot(2,1,2)
+# plt.hist(bias[:, 1], bins=30)
+# plt.show()

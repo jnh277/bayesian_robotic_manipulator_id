@@ -19,6 +19,10 @@ parameters {
     real <lower=0.0> d1;
     real <lower=0.0> d2;
     real <lower=1e-8> r;
+    real <lower=0.01> nu;
+//    vector[2] bias;
+//    vector<lower=0.0>[2] hs_bias;
+//    real<lower=0.0> hs_scale;
 }
 
 transformed parameters {
@@ -28,9 +32,6 @@ transformed parameters {
     real theta4 = l2 * m2;
     real theta5 = l1 * (m1 + m2);
 
-}
-
-model {
     row_vector[N] m11 = theta1 + 2 * theta2 * cos(q[2, :]);
     row_vector[N] m12 = theta3 + theta2 * cos(q[2, :]);
     real m22 = theta3;
@@ -46,12 +47,23 @@ model {
     row_vector[N] ddq1hat = (m22 * f1 - m12 .* f2) ./ mdet;
     row_vector[N] ddq2hat = (m11 .* f2 - m12 .* f1) ./ mdet;
 
+}
+
+model {
+
+
     r ~ cauchy(0, 1.0);
 
-    ddq[1, :] ~ normal(ddq1hat, r);
-    ddq[2, :] ~ normal(ddq2hat, r);
+//    hs_scale ~ cauchy(0., 1.);
+//    hs_bias ~ cauchy(0., 1.);
+//    bias ~ normal(0, hs_bias * hs_scale);
 
-//    ddq[1, :] .* m11 + ddq[2, :] .* m12 - f1 ~ normal(0.0, r);
-//    ddq[1,:] .* m12 + ddq[2, :] * m22 - f2 ~ normal(0.0, r);
+    nu ~ gamma(2,0.1);
+    ddq[1, :] ~ student_t(nu, ddq1hat, r);
+    ddq[2, :] ~ student_t(nu, ddq2hat, r);
+//    ddq[1, :] ~ normal(ddq1hat, r);
+//    ddq[2, :] ~ normal(ddq2hat, r);
+
+
 
 }

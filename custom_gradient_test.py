@@ -1,4 +1,4 @@
-import stan
+import pystan
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -42,7 +42,9 @@ stan_data = {
     'y':y
 }
 
-posterior = stan.build(model_code, stanc_options=list("allow_undefined"), includes=["custom_grad_test.hpp"], include_dirs=["."], data=stan_data, random_seed=1120)
+model = pystan.StanModel(model_code=model_code, allow_undefined=True, includes=["custom_grad_test.hpp"], include_dirs=["."],)
+
+# posterior = stan.build(model_code, stanc_options=list("allow_undefined"), includes=["custom_grad_test.hpp"], include_dirs=["."], data=stan_data, random_seed=1120)
 fit = posterior.sample(num_samples=2000)
 
 theta_samp = fit['theta'][0,:]

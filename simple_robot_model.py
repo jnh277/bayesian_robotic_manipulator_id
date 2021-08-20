@@ -207,7 +207,7 @@ params = to_param_vector(I_1, r_1, m_1, fv_1, I_2, r_2, m_2, fv_2)
 
 
 dt = 0.01
-Tsim = 10
+Tsim = 2
 T = np.round(Tsim/dt).astype(int)
 
 q = np.zeros((2, T+1))
@@ -285,7 +285,7 @@ def init_function():
 init = [init_function(),init_function(),init_function(),init_function()]
 
 
-f = open('stan/simple_robot.stan', 'r')
+f = open('stan/simple_robot_v2.stan', 'r')
 model_code = f.read()
 posterior = stan.build(model_code, data=stan_data)
 traces = posterior.sample(init=init,num_samples=2000, num_warmup=6000, num_chains=4)

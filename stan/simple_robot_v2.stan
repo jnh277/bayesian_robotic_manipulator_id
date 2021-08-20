@@ -20,13 +20,13 @@ parameters {
     real <lower=0.0> eig12;        // eigen values
     real <lower=0.0> eig13;
     real <lower=fmax(eig13-eig12,eig12-eig13), upper=eig12+eig13> eig11;
-    unit_vector[4] q1;
+    unit_vector[4] quat1;
 
     // parameters for second inertia
     real <lower=0.0> eig22;        // eigen values
     real <lower=0.0> eig23;
     real <lower=fmax(eig23-eig22,eig22-eig23), upper=eig22+eig23> eig21;
-    unit_vector[4] q2;
+    unit_vector[4] quat2;
 }
 
 transformed parameters {
@@ -35,18 +35,22 @@ transformed parameters {
     // transformed parameters for first inertia
     vector[3] eigs1;
     matrix[3,3] R1;
-    matrix[3,3] Inertia1;
-    R1[1,1] = q[1]*q[1] + q[2]*q[2] - q[3]*q[3] - q[4]*q[4]; R[1,2] = 2*(q[2]*q[3]-q[1]*q[4]); R[1,3] = 2*(q[1]*q[3]+q[2]*q[4]);
-    R1[2,1] = 2*(q[2]*q[3]+q[1]*q[4]); R[2,2] = q[1]*q[1] - q[2]*q[2] + q[3]*q[3] - q[4]*q[4]; R[2,3] = 2*(q[3]*q[4]-q[1]*q[2]);
-    R1[3,1] = 2*(q[2]*q[4]-q[1]*q[3]); R[3,2] = 2*(q[1]*q[2]+q[3]*q[4]); R[3,3] = q[1]*q[1] - q[2]*q[2] - q[3]*q[3] + q[4]*q[4];
-
-    eigs[1] = eig1; eigs[2] = eig2; eigs[3] = eig3;
-    Inertia = diag_post_multiply(R,eigs) * R';
+    matrix[3,3] I_1;
+    R1[1,1] = quat1[1]*quat1[1] + quat1[2]*quat1[2] - quat1[3]*quat1[3] - quat1[4]*quat1[4]; R1[1,2] = 2*(quat1[2]*quat1[3]-quat1[1]*quat1[4]); R1[1,3] = 2*(quat1[1]*quat1[3]+quat1[2]*quat1[4]);
+    R1[2,1] = 2*(quat1[2]*quat1[3]+quat1[1]*quat1[4]); R1[2,2] = quat1[1]*quat1[1] - quat1[2]*quat1[2] + quat1[3]*quat1[3] - quat1[4]*quat1[4]; R1[2,3] = 2*(quat1[3]*quat1[4]-quat1[1]*quat1[2]);
+    R1[3,1] = 2*(quat1[2]*quat1[4]-quat1[1]*quat1[3]); R1[3,2] = 2*(quat1[1]*quat1[2]+quat1[3]*quat1[4]); R1[3,3] = quat1[1]*quat1[1] - quat1[2]*quat1[2] - quat1[3]*quat1[3] + quat1[4]*quat1[4];
+    eigs1[1] = eig11; eigs1[2] = eig12; eigs1[3] = eig13;
+    I_1 = diag_post_multiply(R1,eigs1) * R1';
 
     // transformed parameters for second inertia
     vector[3] eigs2;
     matrix[3,3] R2;
-    matrix[3,3] Inertia2;
+    matrix[3,3] I_2;
+    R2[1,1] = quat2[1]*quat2[1] + quat2[2]*quat2[2] - quat2[3]*quat2[3] - quat2[4]*quat2[4]; R2[1,2] = 2*(quat2[2]*quat2[3]-quat2[1]*quat2[4]); R2[1,3] = 2*(quat2[1]*quat2[3]+quat2[2]*quat2[4]);
+    R2[2,1] = 2*(quat2[2]*quat2[3]+quat2[1]*quat2[4]); R2[2,2] = quat2[1]*quat2[1] - quat2[2]*quat2[2] + quat2[3]*quat2[3] - quat2[4]*quat2[4]; R2[2,3] = 2*(quat2[3]*quat2[4]-quat2[1]*quat2[2]);
+    R2[3,1] = 2*(quat2[2]*quat2[4]-quat2[1]*quat2[3]); R2[3,2] = 2*(quat2[1]*quat2[2]+quat2[3]*quat2[4]); R2[3,3] = quat2[1]*quat2[1] - quat2[2]*quat2[2] - quat2[3]*quat2[3] + quat2[4]*quat2[4];
+    eigs2[1] = eig21; eigs2[2] = eig22; eigs2[3] = eig23;
+    I_2 = diag_post_multiply(R2,eigs2) * R2';
 
 
     real L_1xx, L_1yy, L_1zz, L_1xy, L_1xz, L_1yz;

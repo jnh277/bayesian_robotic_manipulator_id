@@ -227,11 +227,11 @@ for t in range(T):
     q[:, [t+1]] = q[:, [t]] + dt * dq[:, [t]]
 
     # binary input switching
-    if np.random.rand() > 0.99:
+    if np.random.rand() > 0.95:
         tau[0, t+1] = -tau[0, t]
     else:
         tau[0, t+1] = tau[0, t]
-    if np.random.rand() > 0.99:
+    if np.random.rand() > 0.95:
         tau[1, t+1] = -tau[1, t]
     else:
         tau[1, t+1] = tau[1, t]
@@ -266,17 +266,119 @@ plt.plot(np.arange(T)*dt, tau_hat[1, :],'--')
 plt.plot(np.arange(T)*dt, tau[1, :] - tau_hat[1, :])
 plt.show()
 
+r = 1e-2
+tau_m = tau + np.random.normal(0,r,tau.shape)
 
 stan_data = {
     'N':int(T),
     'q':q,
     'dq':dq,
     'ddq':ddq,
-    'tau':tau,
+    'tau':tau_m,
     'a1':a1
 }
+
+def init_function():
+    output = dict(m_1=m_1, m_2=m_2,I_1=I_1,I_2=I_2,r_1=r_1,r_2=r_2)
+    return output
+
+init = [init_function(),init_function(),init_function(),init_function()]
+
 
 f = open('stan/simple_robot.stan', 'r')
 model_code = f.read()
 posterior = stan.build(model_code, data=stan_data)
-traces = posterior.sample(num_samples=2000, num_warmup=2000, num_chains=4)
+traces = posterior.sample(init=init,num_samples=2000, num_warmup=6000, num_chains=4)
+
+I_1_hat = traces['I_1']
+I_2_hat = traces['I_2']
+r_1_hat = traces['r_1']
+r_2_hat = traces['r_2']
+m_1_hat = traces['m_1']
+m_2_hat = traces['m_2']
+r_hat = traces['r']
+fv_1_hat = traces['fv_1']
+fv_2_hat = traces['fv_2']
+
+plt.hist(r_hat[0], bins=30)
+# plt.axvline(m_1, linestyle='--', linewidth=2, color='k')
+plt.show()
+
+plt.subplot(2,2,1)
+plt.hist(m_1_hat[0], bins=30)
+plt.axvline(m_1, linestyle='--', linewidth=2, color='k')
+plt.title('m_1')
+plt.xlim([0, m_1*5])
+
+plt.subplot(2,2,2)
+plt.hist(m_2_hat[0], bins=30)
+plt.axvline(m_2, linestyle='--', linewidth=2, color='k')
+plt.title('m_2')
+plt.xlim([0, m_2*5])
+
+plt.subplot(2,2,3)
+plt.hist(fv_1_hat[0], bins=30)
+plt.axvline(fv_1, linestyle='--', linewidth=2, color='k')
+plt.title('fv_1')
+# plt.xlim([0, fv_1*5])
+
+plt.subplot(2,2,4)
+plt.hist(fv_2_hat[0], bins=30)
+plt.axvline(fv_2, linestyle='--', linewidth=2, color='k')
+plt.title('fv_2')
+# plt.xlim([0, fv_2*5])
+
+plt.tight_layout()
+plt.show()
+
+
+for i in range(9):
+    plt.subplot(3,3,i+1)
+    plt.hist(I_1_hat[i //3, i % 3], bins=30, range=[0, I_1[i //3, i % 3] * 5])
+    plt.axvline(I_1[i //3, i % 3], linestyle='--', linewidth=2, color='k')
+    if i==1:
+        plt.title('I_1')
+plt.tight_layout()
+plt.show()
+
+for i in range(9):
+    plt.subplot(3,3,i+1)
+    plt.hist(I_2_hat[i //3, i % 3], bins=30, range=[0, I_2[i //3, i % 3] * 5])
+    plt.axvline(I_2[i //3, i % 3], linestyle='--', linewidth=2, color='k')
+    if i==1:
+        plt.title('I_2')
+plt.tight_layout()
+plt.show()
+
+for i in range(3):
+    plt.subplot(2,3,i+1)
+    plt.hist(r_1_hat[0], bins=30)
+    plt.axvline(r_1[0], linestyle='--', linewidth=2, color='k')
+    if i==0:
+        plt.ylabel('r_1')
+    plt.subplot(2,3,i+1+3)
+    plt.hist(r_2_hat[0], bins=30)
+    plt.axvline(r_2[0], linestyle='--', linewidth=2, color='k')
+    if i==0:
+        plt.ylabel('r_2')
+
+plt.tight_layout()
+plt.show()
+
+# parameters that actually affect the model
+# [L_1zz + 16*m_2/25],
+# [   l_1x + 4*m_2/5],
+# [             l_1y],
+# [             fv_1],
+# [            L_2zz],
+# [             l_2x],
+# [             l_2y],
+# [             fv_2]])
+
+# which gives us the following observable root parameters
+# I_1zz,
+# r_1x, r_1y
+# m_1, m_2
+# fv_1, fv_2
+# r_2x, r_2y,
+# I_2zz

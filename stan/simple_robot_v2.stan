@@ -8,8 +8,6 @@ data {
 }
 
 parameters {
-    cov_matrix[3] I_1;
-    cov_matrix[3] I_2;
     real<lower=1e-6> m_1;
     real<lower=1e-6> m_2;
     vector[3] r_1;
@@ -17,10 +15,40 @@ parameters {
     real<lower=0.0> fv_1;
     real<lower=0.0> fv_2;
     real<lower=1e-6> r;     // measurement standard deviation
+
+    // parameters for first inertia
+    real <lower=0.0> eig12;        // eigen values
+    real <lower=0.0> eig13;
+    real <lower=fmax(eig13-eig12,eig12-eig13), upper=eig12+eig13> eig11;
+    unit_vector[4] q1;
+
+    // parameters for second inertia
+    real <lower=0.0> eig22;        // eigen values
+    real <lower=0.0> eig23;
+    real <lower=fmax(eig23-eig22,eig22-eig23), upper=eig22+eig23> eig21;
+    unit_vector[4] q2;
 }
 
 transformed parameters {
     // need l_1, l_2, L_1, L_2
+
+    // transformed parameters for first inertia
+    vector[3] eigs1;
+    matrix[3,3] R1;
+    matrix[3,3] Inertia1;
+    R1[1,1] = q[1]*q[1] + q[2]*q[2] - q[3]*q[3] - q[4]*q[4]; R[1,2] = 2*(q[2]*q[3]-q[1]*q[4]); R[1,3] = 2*(q[1]*q[3]+q[2]*q[4]);
+    R1[2,1] = 2*(q[2]*q[3]+q[1]*q[4]); R[2,2] = q[1]*q[1] - q[2]*q[2] + q[3]*q[3] - q[4]*q[4]; R[2,3] = 2*(q[3]*q[4]-q[1]*q[2]);
+    R1[3,1] = 2*(q[2]*q[4]-q[1]*q[3]); R[3,2] = 2*(q[1]*q[2]+q[3]*q[4]); R[3,3] = q[1]*q[1] - q[2]*q[2] - q[3]*q[3] + q[4]*q[4];
+
+    eigs[1] = eig1; eigs[2] = eig2; eigs[3] = eig3;
+    Inertia = diag_post_multiply(R,eigs) * R';
+
+    // transformed parameters for second inertia
+    vector[3] eigs2;
+    matrix[3,3] R2;
+    matrix[3,3] Inertia2;
+
+
     real L_1xx, L_1yy, L_1zz, L_1xy, L_1xz, L_1yz;
     real L_2xx, L_2yy, L_2zz, L_2xy, L_2xz, L_2yz;
     vector[3] l_1 = r_1 * m_1;

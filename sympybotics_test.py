@@ -47,6 +47,8 @@ tau_python = sympybotics.robotcodegen.robot_code_to_func('Python', rbt.invdyn_co
 
 print(tau_python)
 
+
+
 # rbt.calc_base_parms()
 # rbt.dyn.baseparms
 

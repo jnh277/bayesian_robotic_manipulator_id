@@ -281,29 +281,36 @@ stan_data = {
 def init_function():
     output = dict(m_1=m_1*np.random.uniform(0.8,1.2),
                   m_2=m_2*np.random.uniform(0.8,1.2),
-                  I_1=I_1*np.random.uniform(0.8,1.2,I_1.shape),
-                  I_2=I_2*np.random.uniform(0.8,1.2,I_2.shape),
-                  r_1=r_1*np.random.uniform(0.8,1.2,r_1.shape),
-                  r_2=r_2*np.random.uniform(0.8,1.2,r_2.shape))
+                  I_1zz=I_1[2,2]*np.random.uniform(0.8,1.2),
+                  I_2zz=I_2[2,2]*np.random.uniform(0.8,1.2),
+                  r_1x=r_1[0]*np.random.uniform(0.8,1.2),
+                  r_1y=r_1[1]*np.random.uniform(0.8,1.2),
+                  r_2x=r_2[0]*np.random.uniform(0.8,1.2),
+                  r_2y=r_2[1]*np.random.uniform(0.8,1.2))
     return output
 
 init = [init_function(),init_function(),init_function(),init_function()]
 
 
-f = open('stan/simple_robot.stan', 'r')
+f = open('stan/simple_robot_cutdown.stan', 'r')
 model_code = f.read()
 posterior = stan.build(model_code, data=stan_data)
 traces = posterior.sample(init=init,num_samples=2000, num_warmup=8000, num_chains=4)
 
-I_1_hat = traces['I_1']
-I_2_hat = traces['I_2']
-r_1_hat = traces['r_1']
-r_2_hat = traces['r_2']
+I_1zz_hat = traces['I_1zz']
+I_2zz_hat = traces['I_2zz']
+r_1x_hat = traces['r_1x']
+r_1y_hat = traces['r_1y']
+r_2x_hat = traces['r_2x']
+r_2y_hat = traces['r_2y']
 m_1_hat = traces['m_1']
 m_2_hat = traces['m_2']
 r_hat = traces['r']
 fv_1_hat = traces['fv_1']
 fv_2_hat = traces['fv_2']
+
+
+
 
 plt.hist(r_hat[0], bins=30)
 # plt.axvline(m_1, linestyle='--', linewidth=2, color='k')
@@ -337,35 +344,38 @@ plt.tight_layout()
 plt.show()
 
 
-for i in range(9):
-    plt.subplot(3,3,i+1)
-    plt.hist(I_1_hat[i //3, i % 3], bins=30, range=[0, I_1[i //3, i % 3] * 5])
-    plt.axvline(I_1[i //3, i % 3], linestyle='--', linewidth=2, color='k')
-    if i==1:
-        plt.title('I_1')
+plt.subplot(1,2,1)
+plt.hist(I_1zz_hat[0], bins=30)
+plt.axvline(I_1[2,2], linestyle='--', linewidth=2, color='k')
+plt.title('I_1zz')
+
+plt.subplot(1,2,2)
+plt.hist(I_2zz_hat[0], bins=30)
+plt.axvline(I_2[2,2], linestyle='--', linewidth=2, color='k')
+plt.title('I_2zz')
 plt.tight_layout()
 plt.show()
 
-for i in range(9):
-    plt.subplot(3,3,i+1)
-    plt.hist(I_2_hat[i //3, i % 3], bins=30, range=[0, I_2[i //3, i % 3] * 5])
-    plt.axvline(I_2[i //3, i % 3], linestyle='--', linewidth=2, color='k')
-    if i==1:
-        plt.title('I_2')
-plt.tight_layout()
-plt.show()
+plt.subplot(2,2,1)
+plt.hist(r_1x_hat[0], bins=30)
+plt.axvline(r_1[0], linestyle='--', linewidth=2, color='k')
+plt.title('r_1x')
 
-for i in range(3):
-    plt.subplot(2,3,i+1)
-    plt.hist(r_1_hat[i], bins=30)
-    plt.axvline(r_1[i], linestyle='--', linewidth=2, color='k')
-    if i==0:
-        plt.ylabel('r_1')
-    plt.subplot(2,3,i+1+3)
-    plt.hist(r_2_hat[i], bins=30)
-    plt.axvline(r_2[i], linestyle='--', linewidth=2, color='k')
-    if i==0:
-        plt.ylabel('r_2')
+plt.subplot(2,2,2)
+plt.hist(r_1y_hat[0], bins=30)
+plt.axvline(r_1[1], linestyle='--', linewidth=2, color='k')
+plt.title('r_1y')
+
+plt.subplot(2,2,3)
+plt.hist(r_2x_hat[0], bins=30)
+plt.axvline(r_2[0], linestyle='--', linewidth=2, color='k')
+plt.title('r_2x')
+
+plt.subplot(2,2,4)
+plt.hist(r_2y_hat[0], bins=30)
+plt.axvline(r_2[1], linestyle='--', linewidth=2, color='k')
+plt.title('r_2y')
+
 
 plt.tight_layout()
 plt.show()
@@ -380,36 +390,28 @@ plt.show()
 # [             l_2y],
 # [             fv_2]])
 
-# which gives us the following observable root parameters (not quite how this works)
-# I_1zz,
-# r_1x, r_1y
-# m_1, m_2
-# fv_1, fv_2
-# r_2x, r_2y,
-# I_2zz
-
 L_1zz_hat = traces['L_1zz']
 L_2zz_hat = traces['L_2zz']
-l_1_hat = traces['l_1']
-l_2_hat = traces['l_2']
-
-
+l_1x_hat = traces['l_1x']
+l_1y_hat = traces['l_1y']
+l_2x_hat = traces['l_2x']
+l_2y_hat = traces['l_2y']
 L_1, L_2 = L_funcof_I(I_1, r_1, m_1, I_2, r_2, m_2)
 l_1, l_2 = l_funcof_r(r_1, m_1, r_2, m_2)
 
 plt.subplot(3,3,1)
-plt.hist(L_1zz_hat[0,0] + 16/25 * m_2_hat[0], bins=30, density=True)
+plt.hist(L_1zz_hat[0] + 16/25 * m_2_hat[0], bins=30, density=True)
 plt.axvline(L_1[2,2] + 16/25 * m_2, linestyle='--', linewidth=2, color='k')
 plt.xlabel('L_1zz + 16*m_2/25')
 
 plt.subplot(3,3,2)
-plt.hist(l_1_hat[0] + 4/5*m_2_hat[0], bins=30, density=True)
+plt.hist(l_1x_hat[0] + 4/5*m_2_hat[0], bins=30, density=True)
 plt.axvline(l_1[0] + 4/5 * m_2, linestyle='--', linewidth=2, color='k')
 plt.xlabel('l_1x + 4*m_2/5')
 plt.title('BASE PARAMS')
 
 plt.subplot(3,3,3)
-plt.hist(l_1_hat[1], bins=30, density=True)
+plt.hist(l_1y_hat[0], bins=30, density=True)
 plt.axvline(l_1[1], linestyle='--', linewidth=2, color='k')
 plt.xlabel('l_1y')
 
@@ -429,14 +431,22 @@ plt.axvline(L_2[2,2], linestyle='--', linewidth=2, color='k')
 plt.xlabel('L_2zz')
 
 plt.subplot(3,3,7)
-plt.hist(l_2_hat[0], bins=30, density=True)
+plt.hist(l_2x_hat[0], bins=30, density=True)
 plt.axvline(l_2[0], linestyle='--', linewidth=2, color='k')
 plt.xlabel('l_2x')
 
 plt.subplot(3,3,8)
-plt.hist(l_2_hat[1], bins=30, density=True)
+plt.hist(l_2y_hat[0], bins=30, density=True)
 plt.axvline(l_2[1], linestyle='--', linewidth=2, color='k')
 plt.xlabel('l_2y')
 
 plt.tight_layout()
 plt.show()
+
+# which gives us the following observable root parameters or does it???
+# I_1zz,
+# r_1x, r_1y
+# m_1, m_2
+# fv_1, fv_2
+# r_2x, r_2y,
+# I_2zz

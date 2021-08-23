@@ -99,8 +99,12 @@ model {
 
     // priors
     r ~ cauchy(0, 1.0);
-    to_vector(I_1) ~ cauchy(0, 1.0);
-    to_vector(I_2) ~ cauchy(0, 1.0);
+    eig11 ~ cauchy(0, 1);
+    eig12 ~ cauchy(0, 1);
+    eig13 ~ cauchy(0, 1);
+    eig21 ~ cauchy(0, 1);
+    eig22 ~ cauchy(0, 1);
+    eig23 ~ cauchy(0, 1);
     r_1 ~ cauchy(0, 1.0);
     r_2 ~ cauchy(0, 1.0);
     fv_1 ~ cauchy(0, 1.0);

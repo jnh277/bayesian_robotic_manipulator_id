@@ -440,8 +440,21 @@ plt.hist(l_2y_hat[0], bins=30, density=True)
 plt.axvline(l_2[1], linestyle='--', linewidth=2, color='k')
 plt.xlabel('l_2y')
 
+plt.subplot(3,3,9)
+plt.hist(r_hat[0], bins=30, density=True)
+plt.axvline(r, linestyle='--', linewidth=2, color='k')
+plt.xlabel('noise std')
+
 plt.tight_layout()
 plt.show()
+
+# look at torque estimates
+tau_hat = traces['tau_hat']
+cm_tau_hat = tau_hat.mean(axis=2)
+tau_mse = ((cm_tau_hat - tau) **2).mean()
+tau_err_var = np.mean((np.reshape(tau, (2,-1,1)) - tau_hat)**2)
+
+
 
 # which gives us the following observable root parameters or does it???
 # I_1zz,

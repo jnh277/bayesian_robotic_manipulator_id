@@ -79,3 +79,23 @@ model {
     tau[2, :] ~ normal(tau_hat[2, :], r);
 
 }
+
+generated quantities {
+    matrix[2, N] tau_hat;
+    row_vector[N] x0 = cos(q[2, :]);
+    row_vector[N] x1 = ddq[1, :] + ddq[2, :];
+    row_vector[N] x2 = -((dq[1, :] + dq[2, :]) .* (dq[1, :] + dq[2, :]));
+    row_vector[N] x3 = 9.81 * sin(q[1, :]);
+    row_vector[N] x4 = -a1*dq[1, :] .* dq[1,:] + x3;
+    row_vector[N] x5 = sin(q[2, :]);
+    row_vector[N] x6 = 9.81*cos(q[1, :]);
+    row_vector[N] x7 = a1*ddq[1, :] + x6;
+    row_vector[N] x8 = x0 .* x7 - x4 .* x5;
+    row_vector[N] x9 = x0 .* x4 + x5 .* x7;
+    row_vector[N] x10 = params[17] * x1 + params[18] * x8 - params[19] * x9;
+    //
+    tau_hat[1, :] = a1*(x0 .* (params[18]*x1 + params[19]*x2 + params[21]*x8) + x5 .* (params[18]*x2 - params[19]*x1 + params[21]*x9)) + ddq[1, :]*params[6] + dq[1, :]*params[11] + params[7]*x6 - params[8]*x3 + x10;
+    tau_hat[2, :] = dq[2, :]*params[22] + x10;
+
+
+}

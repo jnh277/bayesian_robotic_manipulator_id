@@ -290,7 +290,7 @@ def init_function():
 init = [init_function(),init_function(),init_function(),init_function()]
 
 
-f = open('stan/simple_robot.stan', 'r')
+f = open('stan/simple_robot_v2.stan', 'r')
 model_code = f.read()
 posterior = stan.build(model_code, data=stan_data)
 traces = posterior.sample(init=init,num_samples=2000, num_warmup=8000, num_chains=4)
@@ -437,6 +437,31 @@ plt.subplot(3,3,8)
 plt.hist(l_2_hat[1], bins=30, density=True)
 plt.axvline(l_2[1], linestyle='--', linewidth=2, color='k')
 plt.xlabel('l_2y')
+
+plt.subplot(3,3,9)
+plt.hist(r_hat[0], bins=30, density=True)
+plt.axvline(r, linestyle='--', linewidth=2, color='k')
+plt.xlabel('noise std')
+
+plt.tight_layout()
+plt.show()
+
+# look at tau estimates
+tau_hat = traces['tau_hat']
+cm_tau_hat = tau_hat.mean(axis=2)
+tau_mse = ((cm_tau_hat - tau) **2).mean()
+tau_err_var = np.mean((np.reshape(tau, (2,-1,1)) - tau_hat)**2)
+
+for i in range(3):
+    plt.subplot(2,3,i+1)
+    plt.hist(tau_hat[0, i*100+10, :], density=True, bins=30)
+    plt.axvline(tau[0, i*100+10], linestyle='--', linewidth=2, color='k')
+    plt.xlabel('tau[0,'+str(i*100+10)+']')
+
+    plt.subplot(2,3,i+1+3)
+    plt.hist(tau_hat[1, i*100+10, :], density=True, bins=30)
+    plt.axvline(tau[1, i*100+10], linestyle='--', linewidth=2, color='k')
+    plt.xlabel('tau[1,'+str(i*100+10)+']')
 
 plt.tight_layout()
 plt.show()

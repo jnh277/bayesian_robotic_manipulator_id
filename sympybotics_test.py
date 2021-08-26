@@ -13,8 +13,8 @@ q = sympybotics.robotdef.q
 # a1, l1_x, d3, d4 = sympy.symbols('a1, l1_x, d3, d4')
 # a = sympybotics.robotdef._joint_symb
 
-# a1 = sympy.symbols('a1')
-a1 = 0.8
+a1 = sympy.symbols('a1')
+# a1 = 0.8
 
 l1 = 0.8        # length of first arm
 l2 = 0.4

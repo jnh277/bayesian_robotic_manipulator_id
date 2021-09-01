@@ -408,7 +408,7 @@ plt.subplot(3,3,2)
 plt.hist(l_1x_hat[0] + 4/5*m_2_hat[0], bins=30, density=True)
 plt.axvline(l_1[0] + 4/5 * m_2, linestyle='--', linewidth=2, color='k')
 plt.xlabel('l_1x + 4*m_2/5')
-plt.title('BASE PARAMS')
+plt.title('LUMPED PARAMS')
 
 plt.subplot(3,3,3)
 plt.hist(l_1y_hat[0], bins=30, density=True)

@@ -1,5 +1,8 @@
 import sympy
 import sympybotics
+from process_code_str import create_model_block
+
+from process_code_str import c_to_stan
 # rbtdef = sympybotics.RobotDef('Example Robot', # robot name
 #                               [('-pi/2', 0, 0, 'q+pi/2'),  # list of tuples with Denavit-Hartenberg parameters
 #                                ( 'pi/2', 0, 0, 'q-pi/2')], # (alpha, a, d, theta)
@@ -73,3 +76,4 @@ print(g_str)
 rbtdef.L_funcof_I
 
 
+print(create_model_block(3, len(rbtdef.dynparms()),tau_C))

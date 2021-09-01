@@ -1,5 +1,6 @@
 import sympy
 import sympybotics
+from process_code_str import c_to_stan, create_model_block
 # rbtdef = sympybotics.RobotDef('Example Robot', # robot name
 #                               [('-pi/2', 0, 0, 'q+pi/2'),  # list of tuples with Denavit-Hartenberg parameters
 #                                ( 'pi/2', 0, 0, 'q-pi/2')], # (alpha, a, d, theta)
@@ -13,8 +14,8 @@ q = sympybotics.robotdef.q
 # a1, l1_x, d3, d4 = sympy.symbols('a1, l1_x, d3, d4')
 # a = sympybotics.robotdef._joint_symb
 
-a1 = sympy.symbols('a1')
-# a1 = 0.8
+# a1 = sympy.symbols('a1')
+a1 = 0.8
 
 l1 = 0.8        # length of first arm
 l2 = 0.4
@@ -39,7 +40,7 @@ rbt.kin.J[-1]
 # C function generation
 tau_C = sympybotics.robotcodegen.robot_code_to_func('C', rbt.invdyn_code, 'tau_out', 'tau', rbtdef)
 
-print(tau_C)
+print(c_to_stan(tau_C, 2, len(rbtdef.dynparms())))
 
 # Python code generation
 
@@ -49,8 +50,8 @@ print(tau_python)
 
 
 
-# rbt.calc_base_parms()
-# rbt.dyn.baseparms
+rbt.calc_base_parms()
+rbt.dyn.baseparms
 
 # how to get forward dynamics
 # from sympybotics.symcode import Subexprs, code_to_func
@@ -81,3 +82,4 @@ print(g_str)
 rbtdef.L_funcof_I
 
 
+print(create_model_block(2, len(rbtdef.dynparms()),tau_C))

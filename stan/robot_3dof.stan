@@ -82,7 +82,7 @@ transformed parameters {
 	L_3xy = I_3[1,2] - m_3*r_3[1]*r_3[2];
 	L_3xz = I_3[1,3] - m_3*r_3[1]*r_3[3];
 	L_3yz = I_3[2,3] - m_3*r_3[2]*r_3[3];
-	row_vector[22] params = [L_1xx, L_1xy, L_1xz, L_1yy, L_1yz, L_1zz, l_1[1], l_1[2], l_1[3], m_1, fv_1,
+	row_vector[33] params = [L_1xx, L_1xy, L_1xz, L_1yy, L_1yz, L_1zz, l_1[1], l_1[2], l_1[3], m_1, fv_1,
 				L_2xx, L_2xy, L_2xz, L_2yy, L_2yz, L_2zz, l_2[1], l_2[2], l_2[3], m_2, fv_2,
 				L_3xx, L_3xy, L_3xz, L_3yy, L_3yz, L_3zz, l_3[1], l_3[2], l_3[3], m_3, fv_3];
 }

@@ -28,6 +28,17 @@ rbtdef = sympybotics.robotdef.RobotDef('Example Robot', # robot name
 
 
 rbtdef.frictionmodel = {'viscous'} # options are None or a combination of 'Coulomb', 'viscous' and 'offset'
+
+# rbtdef = sympybotics.robotdef.RobotDef('Example Robot', # robot name
+#                             [('pi/2', 0, 0, 'q'),  # list of tuples with Denavit-Hartenberg parameters
+#                                (0, a1, 0, 'q')], # (alpha, a, d, theta)
+#                               dh_convention='modified' # either 'standard' or 'modified'
+#                              )
+#
+#
+# rbtdef.frictionmodel = {'viscous'} # options are None or a combination of 'Coulomb', 'viscous' and 'offset'
+# rbtdef.driveinertiamodel = 'simplified'
+
 rbtdef.gravityacc = sympy.Matrix([0.0, 0.0, -9.81]) # optional, this is the default value
 
 rbtdef.dynparms()       # parameters

@@ -295,7 +295,7 @@ def inverse_dynamics(parms, q, dq, ddq):
     return np.array(tau_out)
 
 dt = 0.01
-Tsim = 10
+Tsim = 2
 T = np.round(Tsim/dt).astype(int)
 
 q = np.zeros((3, T+1))
@@ -353,6 +353,7 @@ r = 1e-2
 tau_m = tau + np.random.normal(0,r,tau.shape)
 
 stan_data = {
+    'dof':3,
     'N':int(T),
     'q':q,
     'dq':dq,
@@ -361,23 +362,16 @@ stan_data = {
     'a1':a1,
     'd0':d0
 }
-
+r_com = np.vstack((r_1,r_2,r_3))
 def init_function():
-    output = dict(m_1=m_1*np.random.uniform(0.8,1.2),
-                  m_2=m_2*np.random.uniform(0.8,1.2),
-                  m_3=m_2 * np.random.uniform(0.8, 1.2),
-                  # I_1=I_1*np.random.uniform(0.9,1.1,I_1.shape),
-                  # I_2=I_2*np.random.uniform(0.9,1.1,I_2.shape),
-                  # I_3=I_2*np.random.uniform(0.8, 1.2, I_2.shape),
-                  r_1=r_1*np.random.uniform(0.8,1.2,r_1.shape),
-                  r_2=r_2*np.random.uniform(0.8,1.2,r_2.shape),
-                  r_3=r_3 * np.random.uniform(0.8, 1.2, r_2.shape))
+    output = dict(m=[m_1*np.random.uniform(0.8,1.2),m_2*np.random.uniform(0.8,1.2),m_2 * np.random.uniform(0.8, 1.2)],
+                  r_com=r_com*np.random.uniform(0.8,1.2,r_com.shape))
     return output
 
 init = [init_function(),init_function(),init_function(),init_function()]
 
 
-f = open('stan/robot_3dof.stan', 'r')
+f = open('stan/robot_3dof_auto.stan', 'r')
 model_code = f.read()
 posterior = stan.build(model_code, data=stan_data)
 traces = posterior.sample(init=init,num_samples=2000, num_warmup=8000, num_chains=4)
@@ -414,15 +408,33 @@ for param_str in lumped_params:
 param_list = set(param_list)
 param_dict = dict()
 
+
 for param in param_list:
     if param[0:2] == "l_":
+        dig=int(param[2])-1
         if param[3] == 'x':
-            param_dict[param] = traces[param[0:3]][0]
+            param_dict[param] = traces['l'][dig][0]
         if param[3] == 'y':
-            param_dict[param] = traces[param[0:3]][1]
+            param_dict[param] = traces['l'][dig][1]
         if param[3] == 'z':
-            param_dict[param] = traces[param[0:3]][2]
+            param_dict[param] = traces['l'][dig][2]
+    elif param[0:2] == "L_":
+        dig=int(param[2])-1
+        name=param[0:1]+param[3:]
+        param_dict[param] = traces[name][dig]
+    elif param[0:2] == "m_":
+        dig=int(param[-1])-1
+        param_dict[param] = traces['m'][dig]
+    elif param[0] == "f":
+        name=param[0:2]
+        dig=int(param[-1])-1
+        param_dict[param] = traces[name][dig]
+    elif param[0] == "Ia":
+        name=param[0:2]
+        dig=int(param[-1])-1
+        param_dict[param] = traces[name][dig]
     else:
+        print("error occured")
         param_dict[param] = traces[param]
 
 expressions_list = lumped_params.copy()

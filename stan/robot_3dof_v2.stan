@@ -1,5 +1,6 @@
 data {
     int<lower=0> N;
+    int<lower=0> dof;
     matrix[3, N] q;
     matrix[3, N] dq;
     matrix[3, N] ddq;
@@ -9,89 +10,63 @@ data {
 }
 
 parameters {
-	real<lower=1e-6> r;
-	real<lower=1e-6> m_1;
-	vector[3] r_1;
-	real<lower=0.0> fv_1;
-	cov_matrix[3] I_1;
-//	real <lower=0.0> eig12;
-//	real <lower=0.0> eig13;
-//	real <lower=fmax(eig13-eig12,eig12-eig13), upper=eig12+eig13> eig11;
-//	unit_vector[4] quat1;
-	real<lower=1e-6> m_2;
-	vector[3] r_2;
-	real<lower=0.0> fv_2;
-	cov_matrix[3] I_2;
-//	real <lower=0.0> eig22;
-//	real <lower=0.0> eig23;
-//	real <lower=fmax(eig23-eig22,eig22-eig23), upper=eig22+eig23> eig21;
-//	unit_vector[4] quat2;
-	real<lower=1e-6> m_3;
-	vector[3] r_3;
-	real<lower=0.0> fv_3;
-	cov_matrix[3] I_3;
-//	real <lower=0.0> eig32;
-//	real <lower=0.0> eig33;
-//	real <lower=fmax(eig33-eig32,eig32-eig33), upper=eig32+eig33> eig31;
-//	unit_vector[4] quat3;
+	real<lower=1e-6> r;         // measurement standard deviations
+	real<lower=1e-6> m[dof];    // mass of each link
+	vector[3] r_com[dof];       // center of mass of each link
+	real<lower=0.0> fv[dof];    // viscous friction term for each link
+	unit_vector[4] quat[dof];   // quaternions describing inertia tensor rotation for each link
+	// now separate eigen values for inertia tensors so that constraints can be imposed
+	real <lower=0.0> eig12;
+	real <lower=0.0> eig13;
+	real <lower=fmax(eig13-eig12,eig12-eig13), upper=eig12+eig13> eig11;
+	real <lower=0.0> eig22;
+	real <lower=0.0> eig23;
+	real <lower=fmax(eig23-eig22,eig22-eig23), upper=eig22+eig23> eig21;
+	real <lower=0.0> eig32;
+	real <lower=0.0> eig33;
+	real <lower=fmax(eig33-eig32,eig32-eig33), upper=eig32+eig33> eig31;
 }
 
 transformed parameters {
-//	vector[3] eigs1;
-//	matrix[3,3] R1;
-//	matrix[3,3] I_1;
-//	R1[1,1] = quat1[1]*quat1[1] + quat1[2]*quat1[2] - quat1[3]*quat1[3] - quat1[4]*quat1[4]; R1[1,2] = 2*(quat1[2]*quat1[3]-quat1[1]*quat1[4]); R1[1,3] = 2*(quat1[1]*quat1[3]+quat1[2]*quat1[4]);
-//	R1[2,1] = 2*(quat1[2]*quat1[3]+quat1[1]*quat1[4]); R1[2,2] = quat1[1]*quat1[1] - quat1[2]*quat1[2] + quat1[3]*quat1[3] - quat1[4]*quat1[4]; R1[2,3] = 2*(quat1[3]*quat1[4]-quat1[1]*quat1[2]);
-//	R1[3,1] = 2*(quat1[2]*quat1[4]-quat1[1]*quat1[3]); R1[3,2] = 2*(quat1[1]*quat1[2]+quat1[3]*quat1[4]); R1[3,3] = quat1[1]*quat1[1] - quat1[2]*quat1[2] - quat1[3]*quat1[3] + quat1[4]*quat1[4];
-//	eigs1[1] = eig11; eigs1[2] = eig12; eigs1[3] = eig13;
-//	I_1 = diag_post_multiply(R1,eigs1) * R1';
-	real L_1xx, L_1yy, L_1zz, L_1xy, L_1xz, L_1yz;
-	vector[3] l_1 = r_1 * m_1;
-	L_1xx = I_1[1,1] + m_1*pow(r_1[2],2) + m_1*pow(r_1[3],2);
-	L_1yy = I_1[2,2] + m_1*pow(r_1[1],2) + m_1*pow(r_1[3],2);
-	L_1zz = I_1[3,3] + m_1*pow(r_1[1],2) + m_1*pow(r_1[2],2);
-	L_1xy = I_1[1,2] - m_1*r_1[1]*r_1[2];
-	L_1xz = I_1[1,3] - m_1*r_1[1]*r_1[3];
-	L_1yz = I_1[2,3] - m_1*r_1[2]*r_1[3];
-//	vector[3] eigs2;
-//	matrix[3,3] R2;
-//	matrix[3,3] I_2;
-//	R2[1,1] = quat2[1]*quat2[1] + quat2[2]*quat2[2] - quat2[3]*quat2[3] - quat2[4]*quat2[4]; R2[1,2] = 2*(quat2[2]*quat2[3]-quat2[1]*quat2[4]); R2[1,3] = 2*(quat2[1]*quat2[3]+quat2[2]*quat2[4]);
-//	R2[2,1] = 2*(quat2[2]*quat2[3]+quat2[1]*quat2[4]); R2[2,2] = quat2[1]*quat2[1] - quat2[2]*quat2[2] + quat2[3]*quat2[3] - quat2[4]*quat2[4]; R2[2,3] = 2*(quat2[3]*quat2[4]-quat2[1]*quat2[2]);
-//	R2[3,1] = 2*(quat2[2]*quat2[4]-quat2[1]*quat2[3]); R2[3,2] = 2*(quat2[1]*quat2[2]+quat2[3]*quat2[4]); R2[3,3] = quat2[1]*quat2[1] - quat2[2]*quat2[2] - quat2[3]*quat2[3] + quat2[4]*quat2[4];
-//	eigs2[1] = eig21; eigs2[2] = eig22; eigs2[3] = eig23;
-//	I_2 = diag_post_multiply(R2,eigs2) * R2';
-	real L_2xx, L_2yy, L_2zz, L_2xy, L_2xz, L_2yz;
-	vector[3] l_2 = r_2 * m_2;
-	L_2xx = I_2[1,1] + m_2*pow(r_2[2],2) + m_2*pow(r_2[3],2);
-	L_2yy = I_2[2,2] + m_2*pow(r_2[1],2) + m_2*pow(r_2[3],2);
-	L_2zz = I_2[3,3] + m_2*pow(r_2[1],2) + m_2*pow(r_2[2],2);
-	L_2xy = I_2[1,2] - m_2*r_2[1]*r_2[2];
-	L_2xz = I_2[1,3] - m_2*r_2[1]*r_2[3];
-	L_2yz = I_2[2,3] - m_2*r_2[2]*r_2[3];
-//	vector[3] eigs3;
-//	matrix[3,3] R3;
-//	matrix[3,3] I_3;
-//	R3[1,1] = quat3[1]*quat3[1] + quat3[2]*quat3[2] - quat3[3]*quat3[3] - quat3[4]*quat3[4]; R3[1,2] = 2*(quat3[2]*quat3[3]-quat3[1]*quat3[4]); R3[1,3] = 2*(quat3[1]*quat3[3]+quat3[2]*quat3[4]);
-//	R3[2,1] = 2*(quat3[2]*quat3[3]+quat3[1]*quat3[4]); R3[2,2] = quat3[1]*quat3[1] - quat3[2]*quat3[2] + quat3[3]*quat3[3] - quat3[4]*quat3[4]; R3[2,3] = 2*(quat3[3]*quat3[4]-quat3[1]*quat3[2]);
-//	R3[3,1] = 2*(quat3[2]*quat3[4]-quat3[1]*quat3[3]); R3[3,2] = 2*(quat3[1]*quat3[2]+quat3[3]*quat3[4]); R3[3,3] = quat3[1]*quat3[1] - quat3[2]*quat3[2] - quat3[3]*quat3[3] + quat3[4]*quat3[4];
-//	eigs3[1] = eig31; eigs3[2] = eig32; eigs3[3] = eig33;
-//	I_3 = diag_post_multiply(R3,eigs3) * R3';
-	real L_3xx, L_3yy, L_3zz, L_3xy, L_3xz, L_3yz;
-	vector[3] l_3 = r_3 * m_3;
-	L_3xx = I_3[1,1] + m_3*pow(r_3[2],2) + m_3*pow(r_3[3],2);
-	L_3yy = I_3[2,2] + m_3*pow(r_3[1],2) + m_3*pow(r_3[3],2);
-	L_3zz = I_3[3,3] + m_3*pow(r_3[1],2) + m_3*pow(r_3[2],2);
-	L_3xy = I_3[1,2] - m_3*r_3[1]*r_3[2];
-	L_3xz = I_3[1,3] - m_3*r_3[1]*r_3[3];
-	L_3yz = I_3[2,3] - m_3*r_3[2]*r_3[3];
-	row_vector[22] params = [L_1xx, L_1xy, L_1xz, L_1yy, L_1yz, L_1zz, l_1[1], l_1[2], l_1[3], m_1, fv_1,
-				L_2xx, L_2xy, L_2xz, L_2yy, L_2yz, L_2zz, l_2[1], l_2[2], l_2[3], m_2, fv_2,
-				L_3xx, L_3xy, L_3xz, L_3yy, L_3yz, L_3zz, l_3[1], l_3[2], l_3[3], m_3, fv_3];
+
+	vector[3] eigs[dof];    // vectors of eigen values put together
+    matrix[3,3] R[dof];     // rotation matrix for each link describing rotation of inertia
+	matrix[3,3] I[dof];     // inertia about com for each link
+	vector[3] l[dof];            // mass times position of com for each link
+    real Lxx[dof];
+    real Lyy[dof];
+    real Lzz[dof];
+    real Lxy[dof];
+    real Lxz[dof];
+    real Lyz[dof];
+
+	eigs[1,1] = eig11; eigs[1,2] = eig12; eigs[1,3] = eig13;
+	eigs[2,1] = eig21; eigs[2,2] = eig22; eigs[2,3] = eig23;
+	eigs[3,1] = eig31; eigs[3,2] = eig32; eigs[3,3] = eig33;
+
+	for (d in 1:dof){
+        R[d,1,1] = quat[d,1]*quat[d,1] + quat[d,2]*quat[d,2] - quat[d,3]*quat[d,3] - quat[d,4]*quat[d,4]; R[d,1,2] = 2*(quat[d,2]*quat[d,3]-quat[d,1]*quat[d,4]); R[d,1,3] = 2*(quat[d,1]*quat[d,3]+quat[d,2]*quat[d,4]);
+        R[d,2,1] = 2*(quat[d,2]*quat[d,3]+quat[d,1]*quat[d,4]); R[d,2,2] = quat[d,1]*quat[d,1] - quat[d,2]*quat[d,2] + quat[d,3]*quat[d,3] - quat[d,4]*quat[d,4]; R[d,2,3] = 2*(quat[d,3]*quat[d,4]-quat[d,1]*quat[d,2]);
+        R[d,3,1] = 2*(quat[d,2]*quat[d,4]-quat[d,1]*quat[d,3]); R[d,3,2] = 2*(quat[d,1]*quat[d,2]+quat[d,3]*quat[d,4]); R[d,3,3] = quat[d,1]*quat[d,1] - quat[d,2]*quat[d,2] - quat[d,3]*quat[d,3] + quat[d,4]*quat[d,4];
+
+        I[d] = diag_post_multiply(R[d],eigs[d]) * R[d]';
+
+        l[d] = r_com[d] * m[d];
+
+        Lxx[d] = I[d,1,1] + m[d]*pow(r_com[d,2],2) + m[d]*pow(r_com[d,3],2);
+	    Lyy[d] = I[d,2,2] + m[d]*pow(r_com[d,1],2) + m[d]*pow(r_com[d,3],2);
+	    Lzz[d] = I[d,3,3] + m[d]*pow(r_com[d,1],2) + m[d]*pow(r_com[d,2],2);
+	    Lxy[d] = I[d,1,2] - m[d]*r_com[d,1]*r_com[d,2];
+	    Lxz[d] = I[d,1,3] - m[d]*r_com[d,1]*r_com[d,3];
+	    Lyz[d] = I[d,2,3] - m[d]*r_com[d,2]*r_com[d,3];
+	}
+    row_vector[33] params = [Lxx[1], Lxy[1], Lxz[1], Lyy[1], Lyz[1], Lzz[1], l[1,1], l[1,2], l[1,3], m[1], fv[1],
+            Lxx[2], Lxy[2], Lxz[2], Lyy[2], Lyz[2], Lzz[2], l[2,1], l[2,2], l[2,3], m[2], fv[2],
+            Lxx[3], Lxy[3], Lxz[3], Lyy[3], Lyz[3], Lzz[3], l[3,1], l[3,2], l[3,3], m[3], fv[3]];
 }
 model {
 	matrix[3,N] tau_hat;
-  row_vector[N] x0 = sin(q[3,:]);
+    row_vector[N] x0 = sin(q[3,:]);
 	row_vector[N] x1 = sin(q[2,:]);
 	row_vector[N] x2 = dq[1,:].*x1;
 	row_vector[N] x3 = cos(q[2,:]);
@@ -136,21 +111,19 @@ model {
 	tau_hat[3,:] = dq[3,:]*params[33] + x36;
 //
     r ~ cauchy(0, 1.0);
-//	eig11 ~ cauchy(0, 1);
-//	eig12 ~ cauchy(0, 1);
-//	eig13 ~ cauchy(0, 1);
-	r_1 ~ cauchy(0, 1.0);
-	fv_1 ~ cauchy(0, 1.0);
-	to_vector(I_1) ~ cauchy(0, 1);
-	to_vector(I_2) ~ cauchy(0, 1);
-	to_vector(I_3) ~ cauchy(0, 1);
-	r_2 ~ cauchy(0, 1.0);
-	fv_2 ~ cauchy(0, 1.0);
-//	eig31 ~ cauchy(0, 1);
-//	eig32 ~ cauchy(0, 1);
-//	eig33 ~ cauchy(0, 1);
-	r_3 ~ cauchy(0, 1.0);
-	fv_3 ~ cauchy(0, 1.0);
+	eig11 ~ cauchy(0, 1);
+	eig12 ~ cauchy(0, 1);
+	eig13 ~ cauchy(0, 1);
+    eig21 ~ cauchy(0, 1);
+	eig22 ~ cauchy(0, 1);
+	eig23 ~ cauchy(0, 1);
+    eig31 ~ cauchy(0, 1);
+	eig32 ~ cauchy(0, 1);
+	eig33 ~ cauchy(0, 1);
+	for (d in 1:dof){
+	    r_com[d] ~ cauchy(0, 1.0);
+	    fv[d] ~ cauchy(0, 1.0);
+	}
 	tau[1, :] ~ normal(tau_hat[1, :], r);
 	tau[2, :] ~ normal(tau_hat[2, :], r);
 	tau[3, :] ~ normal(tau_hat[3, :], r);

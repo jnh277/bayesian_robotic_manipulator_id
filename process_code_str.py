@@ -74,7 +74,10 @@ def sort_code_str(code_str):
             LHS_np.append(LHS[i])
             RHS_np.append(RHS[i])
 
-        code_str_new = ""
+    for k in range(i+1,len(LHS)):
+        LHS_p.append(LHS[k])
+        RHS_p.append(RHS[k])
+
     code_p = ""
     code_np = ""
     for i in range(len(LHS_np)):

@@ -1,5 +1,90 @@
 import re
 
+def compress_code(code_str):
+    tmp = re.split('\n',code_str)
+    LHS = []
+    RHS = []
+    var_list = []
+    count=0
+    for i, line in enumerate(tmp):
+        if '=' in line:
+            left, right = re.split('=', line)
+            LHS.append(left)
+            RHS.append(right)
+            z = re.search('x\d*',LHS[count])
+            count += 1
+            if z:
+                var_list.append(z.group())
+
+    LHS_new = []
+    RHS_new = []
+    var_list_new = []
+    for i, var in enumerate(var_list):
+        if len(RHS[i]) < 100:
+            for j in range(i+1,len(RHS)):
+                RHS[j] = re.sub(var+'(?!\d)', '('+RHS[i][1:-1]+')',RHS[j])
+        else:
+            var_list_new.append(var)
+            LHS_new.append(LHS[i])
+            RHS_new.append(RHS[i])
+
+    for k in range(i+1, len(LHS)):
+        LHS_new.append(LHS[k])
+        RHS_new.append(RHS[k])
+
+    code_str_new = ""
+    for i in range(len(LHS_new)):
+        code_str_new += LHS_new[i] + '=' + RHS_new[i] +"\n"
+
+    return code_str_new
+
+def sort_code_str(code_str):
+    tmp = re.split('\n',code_str)
+    LHS = []
+    RHS = []
+    var_list = []
+    count = 0
+    for i, line in enumerate(tmp):
+        if '=' in line:
+            left, right = re.split('=', line)
+            LHS.append(left)
+            RHS.append(right)
+            z = re.search('x\d*',LHS[count])
+            count +=1
+            if z:
+                var_list.append(z.group())
+
+    param_deriv_list = ['param']
+    LHS_np = []
+    LHS_p = []
+    RHS_np = []
+    RHS_p = []
+
+    for i in range(len(var_list)):
+        match = False
+        for p in param_deriv_list:
+            if re.search(p+'(?!\d)', RHS[i]):
+                match = True
+                break
+        if match:
+            param_deriv_list.append(var_list[i])
+            LHS_p.append(LHS[i])
+            RHS_p.append(RHS[i])
+        else:
+            LHS_np.append(LHS[i])
+            RHS_np.append(RHS[i])
+
+        code_str_new = ""
+    code_p = ""
+    code_np = ""
+    for i in range(len(LHS_np)):
+        code_np += LHS_np[i] + '=' + RHS_np[i] +"\n"
+
+    for i in range(len(LHS_p)):
+        code_p += LHS_p[i] + '=' + RHS_p[i] +"\n"
+
+    return code_np, code_p
+
 def c_to_stan(code_str, dof, num_params):
     code_str = code_str.replace("  ", "\t")     # replace double spaces with tabs
     for d in range(dof-1,-1,-1):
@@ -18,12 +103,6 @@ def c_to_stan(code_str, dof, num_params):
         param_replace = re.findall('-parms\[\d*\]', sub_str)
         code_str = code_str.replace(sub_str, "")
         code_str = re.sub(x_remove[0]+'(?!\d)',param_replace[0],code_str)
-        # print(x_remove[0])
-        # print(param_replace[0])
-        # code_str = code_str.replace(x_remove[0]+" ", param_replace[0]+" ")
-        # code_str = code_str.replace(x_remove[0] + "*", param_replace[0]+"*")
-        # code_str = code_str.replace("*"+x_remove[0]+" ", "*"+param_replace[0]+" ")
-        # code_str = code_str.replace("*" + x_remove[0] + ";", "*" + param_replace[0] + ";")
 
     code_str = code_str.replace("double", "row_vector[N]")
 
@@ -45,8 +124,6 @@ def c_to_stan(code_str, dof, num_params):
         new_str = sub_str.replace('*','.*')
         code_str = code_str.replace(sub_str, new_str)
 
-    # for d in range(dof-1,-1,-1):        # get ride of sign(dq[blah,:]) and input this as data instead
-    #     code_str = code_str.replace("sign(dq["+str(d+1)+",:])", "sign_dq["+str(d+1)+",:]")
     for d in range(dof-1,-1,-1):        # get ride of sign(dq[blah,:]) and input this as data instead
         code_str = code_str.replace("sign(dq[" + str(d + 1) + ",:])", "sign_dq[" + str(d + 1) + ",:]")
         code_str = code_str.replace("cos(q["+str(d+1)+",:])", "cos_q["+str(d+1)+",:]")
@@ -56,55 +133,21 @@ def c_to_stan(code_str, dof, num_params):
     code_str = code_str[:idx]
 
 
-    ## split based on where param first gets called
-    for line in code_str.split('\n'):
-        if line.find('param') >= 0:
-            first_param_line = line
-            break
-    idx = code_str.index(first_param_line)
+    # attempt to split more intelligently
+    trans_data_code, model_code = sort_code_str(code_str)
+    # ## split based on where param first gets called
+    # for line in code_str.split('\n'):
+    #     if line.find('param') >= 0:
+    #         first_param_line = line
+    #         break
+    # idx = code_str.index(first_param_line)
+    #
+    # code_str = code_str.replace('//\n','')
+    # trans_data_code = code_str[:idx]
+    # model_code = code_str[idx:]
 
-    code_str = code_str.replace('//\n','')
-    trans_data_code = code_str[:idx]
-    model_code = code_str[idx:]
-
-
-    tmp = re.split('\n',model_code)
-    LHS = []
-    RHS = []
-    var_list = []
-    for i, line in enumerate(tmp):
-        if '=' in line:
-            left, right = re.split('=', line)
-            LHS.append(left)
-            RHS.append(right)
-            z = re.search('x\d*',LHS[i])
-            if z:
-                var_list.append(z.group())
-
-    LHS_new = []
-    RHS_new = []
-    var_list_new = []
-    for i, var in enumerate(var_list):
-        if len(RHS[i]) < 100:
-            for j in range(i+1,len(RHS)):
-                RHS[j] = re.sub(var+'(?!\d)', '('+RHS[i][1:-1]+')',RHS[j])
-        else:
-            var_list_new.append(var)
-            LHS_new.append(LHS[i])
-            RHS_new.append(RHS[i])
-
-    for k in range(i+1, len(LHS)):
-        LHS_new.append(LHS[k])
-        RHS_new.append(RHS[k])
-
-    print(var_list_new)
-    print(LHS_new)
-    print(RHS_new)
-
-    model_code_new = ""
-    for i in range(len(LHS_new)):
-        model_code_new += LHS_new[i] + '=' + RHS_new[i] +"\n"
-
+    model_code_new = compress_code(model_code)
+    # trans_data_code_new = compress_code(trans_data_code)  # can't compress this as it doesnt feed through to model code
 
     return trans_data_code, model_code_new
 

@@ -295,7 +295,7 @@ def inverse_dynamics(parms, q, dq, ddq):
     return np.array(tau_out)
 
 dt = 0.01
-Tsim = 2
+Tsim = 1
 T = np.round(Tsim/dt).astype(int)
 
 q = np.zeros((3, T+1))

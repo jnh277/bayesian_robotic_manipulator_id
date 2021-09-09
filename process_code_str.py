@@ -17,10 +17,13 @@ def c_to_stan(code_str, dof, num_params):
         x_remove = re.findall('x\d*', sub_str)
         param_replace = re.findall('-parms\[\d*\]', sub_str)
         code_str = code_str.replace(sub_str, "")
-        code_str = code_str.replace(x_remove[0]+" ", param_replace[0]+" ")
-        code_str = code_str.replace(x_remove[0] + "*", param_replace[0]+"*")
-        code_str = code_str.replace("*"+x_remove[0]+" ", "*"+param_replace[0]+" ")
-        code_str = code_str.replace("*" + x_remove[0] + ";", "*" + param_replace[0] + ";")
+        code_str = re.sub(x_remove[0]+'(?!\d)',param_replace[0],code_str)
+        # print(x_remove[0])
+        # print(param_replace[0])
+        # code_str = code_str.replace(x_remove[0]+" ", param_replace[0]+" ")
+        # code_str = code_str.replace(x_remove[0] + "*", param_replace[0]+"*")
+        # code_str = code_str.replace("*"+x_remove[0]+" ", "*"+param_replace[0]+" ")
+        # code_str = code_str.replace("*" + x_remove[0] + ";", "*" + param_replace[0] + ";")
 
     code_str = code_str.replace("double", "row_vector[N]")
 
@@ -52,6 +55,7 @@ def c_to_stan(code_str, dof, num_params):
     idx = code_str.index("return;")
     code_str = code_str[:idx]
 
+
     ## split based on where param first gets called
     for line in code_str.split('\n'):
         if line.find('param') >= 0:
@@ -59,7 +63,50 @@ def c_to_stan(code_str, dof, num_params):
             break
     idx = code_str.index(first_param_line)
 
-    return code_str[:idx], code_str[idx:]
+    code_str = code_str.replace('//\n','')
+    trans_data_code = code_str[:idx]
+    model_code = code_str[idx:]
+
+
+    tmp = re.split('\n',model_code)
+    LHS = []
+    RHS = []
+    var_list = []
+    for i, line in enumerate(tmp):
+        if '=' in line:
+            left, right = re.split('=', line)
+            LHS.append(left)
+            RHS.append(right)
+            z = re.search('x\d*',LHS[i])
+            if z:
+                var_list.append(z.group())
+
+    LHS_new = []
+    RHS_new = []
+    var_list_new = []
+    for i, var in enumerate(var_list):
+        if len(RHS[i]) < 100:
+            for j in range(i+1,len(RHS)):
+                RHS[j] = re.sub(var+'(?!\d)', '('+RHS[i][1:-1]+')',RHS[j])
+        else:
+            var_list_new.append(var)
+            LHS_new.append(LHS[i])
+            RHS_new.append(RHS[i])
+
+    for k in range(i+1, len(LHS)):
+        LHS_new.append(LHS[k])
+        RHS_new.append(RHS[k])
+
+    print(var_list_new)
+    print(LHS_new)
+    print(RHS_new)
+
+    model_code_new = ""
+    for i in range(len(LHS_new)):
+        model_code_new += LHS_new[i] + RHS_new[i] +"\n"
+
+
+    return trans_data_code, model_code_new
 
 
 def create_param_block(dof, frictionmodel=None,driveinertiamodel=None):

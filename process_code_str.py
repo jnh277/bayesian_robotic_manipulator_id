@@ -103,7 +103,7 @@ def c_to_stan(code_str, dof, num_params):
 
     model_code_new = ""
     for i in range(len(LHS_new)):
-        model_code_new += LHS_new[i] + RHS_new[i] +"\n"
+        model_code_new += LHS_new[i] + '=' + RHS_new[i] +"\n"
 
 
     return trans_data_code, model_code_new

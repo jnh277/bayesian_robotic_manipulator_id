@@ -263,10 +263,10 @@ def create_data_block():
     code_str = "data { \n"
     code_str += "\tint<lower=0> N;\n"
     code_str += "\tint<lower=0> dof;\n"
-    code_str += "\tmatrix[3, N] q;\n"
-    code_str += "\tmatrix[3, N] dq;\n"
-    code_str += "\tmatrix[3, N] ddq;\n"
-    code_str += "\tmatrix[3, N] tau;\n"
+    code_str += "\tmatrix[dof, N] q;\n"
+    code_str += "\tmatrix[dof, N] dq;\n"
+    code_str += "\tmatrix[dof, N] ddq;\n"
+    code_str += "\tmatrix[dof, N] tau;\n"
     code_str += "}\n"
     return code_str
 

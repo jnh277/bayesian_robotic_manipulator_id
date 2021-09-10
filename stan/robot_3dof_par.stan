@@ -1,4 +1,21 @@
-data { 
+functions {
+  real partial_sum(int[] tau_slice,
+                   int start, int end,
+                   row_vector params,
+                   matrix q,
+                   matrix dq,
+                   matrix ddq,
+                   matrix sin_q,
+                   matrix cos_q,
+                   row_vector x0,row_vector x1,row_vector x2,row_vector x3,row_vector x4,row_vector x0,
+                   ) {
+
+
+    return bernoulli_logit_lpmf(y_slice | beta[1] + beta[2] * x[start:end]);
+  }
+}
+
+data {
 	int<lower=0> N;
 	int<lower=0> dof;
 	matrix[3, N] q;
@@ -6,7 +23,7 @@ data {
 	matrix[3, N] ddq;
 	matrix[3, N] tau;
 }
-transformed data { 
+transformed data {
 	matrix[dof, N] sin_q = sin(q);
 	matrix[dof, N] cos_q = cos(q);
 	row_vector[N] x0 = cos_q[2,:];
@@ -40,7 +57,7 @@ transformed data {
 	row_vector[N] x36 = -((x24).*(x24));
 	row_vector[N] x37 = x18.*x22;
 }
-parameters { 
+parameters {
 	real<lower=1e-6> r;
 	real<lower=1e-6> m[dof];
 	vector[3] r_com[dof];
@@ -77,8 +94,8 @@ transformed parameters {
 		Lxz[d] = I[d,1,3] - m[d]*r_com[d,1]*r_com[d,3];
 		Lyz[d] = I[d,2,3] - m[d]*r_com[d,2]*r_com[d,3];
 	}
-	row_vector[33] params = [Lxx[1], Lxy[1], Lxz[1], Lyy[1], Lyz[1], Lzz[1], l[1,1], l[1,2], l[1,3], m[1], fv[1], 
-				Lxx[2], Lxy[2], Lxz[2], Lyy[2], Lyz[2], Lzz[2], l[2,1], l[2,2], l[2,3], m[2], fv[2], 
+	row_vector[33] params = [Lxx[1], Lxy[1], Lxz[1], Lyy[1], Lyz[1], Lzz[1], l[1,1], l[1,2], l[1,3], m[1], fv[1],
+				Lxx[2], Lxy[2], Lxz[2], Lyy[2], Lyz[2], Lzz[2], l[2,1], l[2,2], l[2,3], m[2], fv[2],
 				Lxx[3], Lxy[3], Lxz[3], Lyy[3], Lyz[3], Lzz[3], l[3,1], l[3,2], l[3,3], m[3], fv[3]];
 }
 model {

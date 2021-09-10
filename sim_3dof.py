@@ -1,9 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import stan
+# import stan
 from numpy import cos, sin
+import tqdm
 from mpl_toolkits import mplot3d
+import time
 from itertools import product, combinations
+import json
+import os
+from cmdstanpy import cmdstan_path, CmdStanModel, set_cmdstan_path
+
+set_cmdstan_path('../cmdstan')
+stan_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_auto.stan')
+data_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof.data.json')
 
 
 dof = 3
@@ -295,7 +304,7 @@ def inverse_dynamics(parms, q, dq, ddq):
     return np.array(tau_out)
 
 dt = 0.01
-Tsim = 1
+Tsim = 5
 T = np.round(Tsim/dt).astype(int)
 
 q = np.zeros((3, T+1))
@@ -355,13 +364,15 @@ tau_m = tau + np.random.normal(0,r,tau.shape)
 stan_data = {
     'dof':3,
     'N':int(T),
-    'q':q,
-    'dq':dq,
-    'ddq':ddq,
-    'tau':tau_m,
-    'a1':a1,
-    'd0':d0
+    'q':q.tolist(),
+    'dq':dq.tolist(),
+    'ddq':ddq.tolist(),
+    'tau':tau_m.tolist(),
 }
+
+with open(data_file, 'w') as outfile:
+    json.dump(stan_data, outfile)
+
 r_com = np.vstack((r_1,r_2,r_3))
 def init_function():
     output = dict(m=[m_1*np.random.uniform(0.8,1.2),m_2*np.random.uniform(0.8,1.2),m_2 * np.random.uniform(0.8, 1.2)],
@@ -371,10 +382,14 @@ def init_function():
 init = [init_function(),init_function(),init_function(),init_function()]
 
 
-f = open('stan/robot_3dof_auto.stan', 'r')
-model_code = f.read()
-posterior = stan.build(model_code, data=stan_data)
-traces = posterior.sample(init=init,num_samples=2000, num_warmup=8000, num_chains=4)
+
+model = CmdStanModel(stan_file=stan_file)
+time_start = time.time()
+fit = model.sample(chains=1, data=data_file, iter_warmup=6000, iter_sampling=2000, show_progress=True)
+time_finish = time.time()
+print('Sampling took ', time_finish-time_start, ' seconds')
+
+traces = fit.draws_pd()
 
 # plotting lumped params
 lumped_params = ["L_1zz + L_2yy + L_3yy + 16*m_3/25",
@@ -411,28 +426,28 @@ param_dict = dict()
 
 for param in param_list:
     if param[0:2] == "l_":
-        dig=int(param[2])-1
+        dig=int(param[2])
         if param[3] == 'x':
-            param_dict[param] = traces['l'][dig][0]
+            param_dict[param] = traces['l['+str(dig)+',1]']
         if param[3] == 'y':
-            param_dict[param] = traces['l'][dig][1]
+            param_dict[param] = traces['l['+str(dig)+',2]']
         if param[3] == 'z':
-            param_dict[param] = traces['l'][dig][2]
+            param_dict[param] = traces['l['+str(dig)+',3]']
     elif param[0:2] == "L_":
-        dig=int(param[2])-1
+        dig=int(param[2])
         name=param[0:1]+param[3:]
-        param_dict[param] = traces[name][dig]
+        param_dict[param] = traces[name+'['+str(dig)+']']
     elif param[0:2] == "m_":
         dig=int(param[-1])-1
-        param_dict[param] = traces['m'][dig]
+        param_dict[param] = traces['m['+str(dig)+']']
     elif param[0] == "f":
         name=param[0:2]
-        dig=int(param[-1])-1
-        param_dict[param] = traces[name][dig]
+        dig=int(param[-1])
+        param_dict[param] = traces[name+'['+str(dig)+']']
     elif param[0] == "Ia":
         name=param[0:2]
-        dig=int(param[-1])-1
-        param_dict[param] = traces[name][dig]
+        dig=int(param[-1])
+        param_dict[param] = traces[name+'['+str(dig)+']']
     else:
         print("error occured")
         param_dict[param] = traces[param]

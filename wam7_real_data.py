@@ -1,7 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import stan
-import random
+import os
+import json
+from cmdstanpy import cmdstan_path, CmdStanModel, set_cmdstan_path
+
+set_cmdstan_path('../cmdstan')
+
+# specify locations of Stan program file and data
+stan_file = os.path.join(cmdstan_path(), 'models', 'wam7.stan')
+data_file = os.path.join(cmdstan_path(), 'models', 'wam7.data.json')
+
 
 trajectory = "traj1"
 data = np.load('procdata/'+trajectory+"_proc.npz")
@@ -16,7 +24,7 @@ dof = q.shape[0]
 N = len(t)
 
 ## use a random subset of the data
-N_est = 250
+N_est = 5000
 inds = np.random.choice(N, N_est)
 
 t_est = t[inds]
@@ -25,16 +33,20 @@ dq_est = dq[:, inds]
 ddq_est = ddq[:, inds]
 tau_est = tau[:, inds]
 
+dof = 7
 stan_data = {
-    'dof':7,
+    'dof':dof,
     'N':N_est,
-    'q':q_est,
-    'dq':dq_est,
-    'ddq':ddq_est,
-    'tau':tau_est,
-    'sign_dq':np.sign(dq_est)
+    'q':q_est.tolist(),
+    'dq':dq_est.tolist(),
+    'ddq':ddq_est.tolist(),
+    'tau':tau_est.tolist(),
+    'sign_dq':np.sign(dq_est).tolist()
 }
+with open(data_file, 'w') as outfile:
+    json.dump(stan_data, outfile)
 
+1/0
 # def init_function():
 #     output = dict(m_1=m_1*np.random.uniform(0.8,1.2),
 #                   m_2=m_2*np.random.uniform(0.8,1.2),
@@ -46,10 +58,11 @@ stan_data = {
 
 
 
-f = open('stan/wam7.stan', 'r')
-model_code = f.read()
-posterior = stan.build(model_code, data=stan_data)
-traces = posterior.sample(num_samples=2000, num_warmup=4000, num_chains=4)
+model = CmdStanModel(stan_file=stan_file)
+fit = model.sample(chains=4, data=data_file, iter_warmup=6000, iter_sampling=2000, show_progress=True)
+#fit.summary()
+
+traces = fit.draws_pd()
 
 # plotting lumped params
 lumped_params = ["L_1zz + L_2yy + L_3yy + 16*m_3/25",

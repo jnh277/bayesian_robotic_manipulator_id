@@ -1,10 +1,11 @@
 data { 
 	int<lower=0> N;
 	int<lower=0> dof;
-	matrix[3, N] q;
-	matrix[3, N] dq;
-	matrix[3, N] ddq;
-	matrix[3, N] tau;
+	matrix[3, N] q_f;
+	matrix[3, N] dq_f;
+	matrix[3, N] ddq_f;
+	matrix[3, N] tau_f;
+	int<lower=0> shards;
 }
 transformed data { 
 	matrix[dof, N] sin_q = sin(q);

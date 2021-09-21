@@ -1,17 +1,35 @@
 functions {
-  real partial_sum(int[] tau_slice,
+  real partial_sum(real[,] tau_slice,
                    int start, int end,
                    row_vector params,
+                   int dof,
+                   real r,
                    matrix q,
                    matrix dq,
                    matrix ddq,
                    matrix sin_q,
                    matrix cos_q,
-                   row_vector x0,row_vector x1,row_vector x2,row_vector x3,row_vector x4,row_vector x0,
+                   row_vector x0,row_vector x1,row_vector x2,row_vector x3,row_vector x4,row_vector x5,
+                   row_vector x6,row_vector x7,row_vector x10,row_vector x11,
+                   row_vector x12,row_vector x13,row_vector x14,row_vector x15,row_vector x16,row_vector x17,
+                   row_vector x18,row_vector x19,row_vector x20,row_vector x21,row_vector x22,row_vector x23,
+                   row_vector x24,row_vector x28,
+                   row_vector x32,row_vector x33,row_vector x34,row_vector x35,
+                   row_vector x36,row_vector x37
                    ) {
+   matrix[dof, end-start+1] tau_hat;
 
+    row_vector[end-start+1] x27 = params[24]*x23[start:end] + params[26]*x20[start:end] + params[27]*x10[start:end] - params[29]*x11[start:end] + params[31]*x17[start:end] + x19[start:end].*(params[25]*x18[start:end] + params[27]*x22[start:end] + params[28]*x24[start:end]) + x24[start:end].*(params[23]*x18[start:end] + params[24]*x22[start:end] + params[25]*x24[start:end]);
+	row_vector[end-start+1] x30 = params[23]*x23[start:end] + params[24]*x20[start:end] + params[25]*x10[start:end] + params[30]*x11[start:end] - params[31]*x28[start:end] + x22[start:end].*(params[25]*x18[start:end] + params[27]*x22[start:end] + params[28]*x24[start:end]) - x24[start:end].*(params[24]*x18[start:end] + params[26]*x22[start:end] + params[27]*x24[start:end]);
+	row_vector[end-start+1] x38 = params[25]*x23[start:end] + params[27]*x20[start:end] + params[28]*x10[start:end] + params[29]*x28[start:end] - params[30]*x17[start:end] + x18[start:end].*(params[24]*x18[start:end] + params[26]*x22[start:end] + params[27]*x24[start:end]) - x22[start:end].*(params[23]*x18[start:end] + params[24]*x22[start:end] + params[25]*x24[start:end]);
+	tau_hat[1,:] = ddq[1,start:end]*params[6] + dq[1,start:end]*params[11] + x0[start:end].*(ddq[2,start:end]*params[16] + dq[2,start:end].*(dq[2,start:end]*params[14] + params[12]*x5[start:end] + params[13]*x3[start:end]) + params[13]*x4[start:end] + params[15]*x7[start:end] + params[20]*x15[start:end] - 0.8*params[29]*(-x20[start:end] + x35[start:end]) - 0.8*params[30]*(x23[start:end] + x32[start:end]) - 0.8*params[31]*(x33[start:end] + x34[start:end]) - 0.8*params[32]*x11[start:end] + x12[start:end].*x30 + x14[start:end].*x27 - x5[start:end].*(dq[2,start:end]*params[17] + params[14]*x5[start:end] + params[16]*x3[start:end])) + x2[start:end].*(ddq[2,start:end]*params[14] - dq[2,start:end].*(dq[2,start:end]*params[16] + params[13]*x5[start:end] + params[15]*x3[start:end]) + params[12]*x4[start:end] + params[13]*x7[start:end] - params[20]*x1[start:end] + x14[start:end].*x30 + x21[start:end].*x27 + x3[start:end].*(dq[2,start:end]*params[17] + params[14]*x5[start:end] + params[16]*x3[start:end]));
+	tau_hat[2,:] = ddq[2,start:end]*params[17] + dq[2,start:end]*params[22] + params[14]*x4[start:end] + params[16]*x7[start:end] + params[18]*x1[start:end] - params[19]*x15[start:end] + 0.8*x12[start:end].*(params[29]*(x34[start:end] + x36[start:end]) + params[30]*(-x10[start:end] + x37[start:end]) + params[31]*(x20[start:end] + x35[start:end]) + params[32]*x17[start:end]) + 0.8*x14[start:end].*(params[29]*(x10[start:end] + x37[start:end]) + params[30]*(x33[start:end] + x36[start:end]) + params[31]*(-x23[start:end] + x32[start:end]) + params[32]*x28[start:end]) - x3[start:end].*(dq[2,start:end]*params[14] + params[12]*x5[start:end] + params[13]*x3[start:end]) + x38 + x5[start:end].*(dq[2,start:end]*params[16] + params[13]*x5[start:end] + params[15]*x3[start:end]);
+	tau_hat[3,:] = dq[3,start:end]*params[33] + x38;
 
-    return bernoulli_logit_lpmf(y_slice | beta[1] + beta[2] * x[start:end]);
+    real target_ = normal_lpdf(to_row_vector(tau_slice[:, 1]) | tau_hat[1, :], r);
+    target_ += normal_lpdf(to_row_vector(tau_slice[:, 2]) | tau_hat[2, :], r);
+    target_ += normal_lpdf(to_row_vector(tau_slice[:, 3]) | tau_hat[3, :], r);
+    return target_;
   }
 }
 
@@ -21,7 +39,8 @@ data {
 	matrix[3, N] q;
 	matrix[3, N] dq;
 	matrix[3, N] ddq;
-	matrix[3, N] tau;
+	real tau[N, 3];
+	int<lower=0> grainsize;
 }
 transformed data {
 	matrix[dof, N] sin_q = sin(q);
@@ -99,13 +118,6 @@ transformed parameters {
 				Lxx[3], Lxy[3], Lxz[3], Lyy[3], Lyz[3], Lzz[3], l[3,1], l[3,2], l[3,3], m[3], fv[3]];
 }
 model {
-	matrix[dof, N] tau_hat;
-		row_vector[N] x27 = params[24]*x23 + params[26]*x20 + params[27]*x10 - params[29]*x11 + params[31]*x17 + x19.*(params[25]*x18 + params[27]*x22 + params[28]*x24) + x24.*(params[23]*x18 + params[24]*x22 + params[25]*x24);
-	row_vector[N] x30 = params[23]*x23 + params[24]*x20 + params[25]*x10 + params[30]*x11 - params[31]*x28 + x22.*(params[25]*x18 + params[27]*x22 + params[28]*x24) - x24.*(params[24]*x18 + params[26]*x22 + params[27]*x24);
-	row_vector[N] x38 = params[25]*x23 + params[27]*x20 + params[28]*x10 + params[29]*x28 - params[30]*x17 + x18.*(params[24]*x18 + params[26]*x22 + params[27]*x24) - x22.*(params[23]*x18 + params[24]*x22 + params[25]*x24);
-	tau_hat[1,:] = ddq[1,:]*params[6] + dq[1,:]*params[11] + x0.*(ddq[2,:]*params[16] + dq[2,:].*(dq[2,:]*params[14] + params[12]*x5 + params[13]*x3) + params[13]*x4 + params[15]*x7 + params[20]*x15 - 0.8*params[29]*(-x20 + x35) - 0.8*params[30]*(x23 + x32) - 0.8*params[31]*(x33 + x34) - 0.8*params[32]*x11 + x12.*x30 + x14.*x27 - x5.*(dq[2,:]*params[17] + params[14]*x5 + params[16]*x3)) + x2.*(ddq[2,:]*params[14] - dq[2,:].*(dq[2,:]*params[16] + params[13]*x5 + params[15]*x3) + params[12]*x4 + params[13]*x7 - params[20]*x1 + x14.*x30 + x21.*x27 + x3.*(dq[2,:]*params[17] + params[14]*x5 + params[16]*x3));
-	tau_hat[2,:] = ddq[2,:]*params[17] + dq[2,:]*params[22] + params[14]*x4 + params[16]*x7 + params[18]*x1 - params[19]*x15 + 0.8*x12.*(params[29]*(x34 + x36) + params[30]*(-x10 + x37) + params[31]*(x20 + x35) + params[32]*x17) + 0.8*x14.*(params[29]*(x10 + x37) + params[30]*(x33 + x36) + params[31]*(-x23 + x32) + params[32]*x28) - x3.*(dq[2,:]*params[14] + params[12]*x5 + params[13]*x3) + x38 + x5.*(dq[2,:]*params[16] + params[13]*x5 + params[15]*x3);
-	tau_hat[3,:] = dq[3,:]*params[33] + x38;
 	r ~ cauchy(0, 1.0);
 	for (d in 1:dof){
 		r_com[d] ~ cauchy(0, 1.0);
@@ -120,7 +132,14 @@ model {
 	eig31 ~ cauchy(0, 1);
 	eig32 ~ cauchy(0, 1);
 	eig33 ~ cauchy(0, 1);
-	to_vector(tau) ~ normal(to_vector(tau_hat), r);
-//	tau[2, :] ~ normal(tau_hat[2, :], r);
-//	tau[3, :] ~ normal(tau_hat[3, :], r);
+
+//    target += partial_sum(tau[1:100,:], 1, 100, params, dof, r, q[:,1:100], dq[:,1:100], ddq[:,1:100], sin_q[:,1:100], cos_q[:,1:100], x0[1:100], x1[1:100], x2[1:100], x3[1:100],
+//                    x4[1:100], x5[1:100], x6[1:100], x7[1:100], x10[1:100], x11[1:100], x12[1:100], x13[1:100], x14[1:100], x15[1:100], x16[1:100], x17[1:100], x18[1:100], x19[1:100], x20[1:100],
+//                    x21[1:100], x22[1:100], x23[1:100], x24[1:100], x28[1:100], x32[1:100], x33[1:100], x34[1:100], x35[1:100], x36[1:100],
+//                    x36[1:100]);
+  target += reduce_sum(partial_sum, tau, grainsize, params, dof, r, q, dq, ddq, sin_q, cos_q, x0, x1, x2, x3,
+                    x4, x5, x6, x7, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20,
+                    x21, x22, x23, x24, x28, x32, x33, x34, x35, x36,
+                    x36);
+
 }

@@ -1,44 +1,26 @@
 data { 
 	int<lower=0> N;
 	int<lower=0> dof;
-	matrix[3, N] q;
-	matrix[3, N] dq;
-	matrix[3, N] ddq;
-	matrix[3, N] tau;
+	matrix[dof, N] q;
+	matrix[dof, N] dq;
+	matrix[dof, N] ddq;
+	matrix[dof, N] tau;
 }
 transformed data { 
 	matrix[dof, N] sin_q = sin(q);
 	matrix[dof, N] cos_q = cos(q);
-	row_vector[N] x0 = cos_q[2,:];
-	row_vector[N] x1 = 9.81*x0;
-	row_vector[N] x2 = sin_q[2,:];
-	row_vector[N] x3 = dq[1,:].*x0;
-	row_vector[N] x4 = ddq[1,:].*x2 + dq[2,:].*x3;
-	row_vector[N] x5 = dq[1,:].*x2;
-	row_vector[N] x6 = dq[2,:].*x5;
-	row_vector[N] x7 = ddq[1,:].*x0 - x6;
-	row_vector[N] x10 = ddq[2,:] + ddq[3,:];
-	row_vector[N] x11 = 0.8*x6 - 0.8*x7;
-	row_vector[N] x12 = sin_q[3,:];
-	row_vector[N] x13 = 0.8*ddq[2,:] + x1 + 0.8*x3.*x5;
-	row_vector[N] x14 = cos_q[3,:];
-	row_vector[N] x15 = 9.81*x2;
-	row_vector[N] x16 = -0.8*((dq[2,:]).*(dq[2,:])) + x15 - 0.8*((x3).*(x3));
-	row_vector[N] x17 = x12.*x13 + x14.*x16;
-	row_vector[N] x18 = x12.*x3 + x14.*x5;
-	row_vector[N] x19 = -x18;
-	row_vector[N] x20 = dq[3,:].*x19 - x12.*x4 + x14.*x7;
-	row_vector[N] x21 = -x12;
-	row_vector[N] x22 = x14.*x3 + x21.*x5;
-	row_vector[N] x23 = dq[3,:].*x22 + x12.*x7 + x14.*x4;
-	row_vector[N] x24 = dq[2,:] + dq[3,:];
-	row_vector[N] x28 = x13.*x14 + x16.*x21;
-	row_vector[N] x32 = x22.*x24;
-	row_vector[N] x33 = -((x18).*(x18));
-	row_vector[N] x34 = -((x22).*(x22));
-	row_vector[N] x35 = x18.*x24;
-	row_vector[N] x36 = -((x24).*(x24));
-	row_vector[N] x37 = x18.*x22;
+		row_vector[N] x5 = 0.8*(dq[2,:].*(dq[1,:].*(sin_q[2,:]))) - 0.8*(ddq[1,:].*(cos_q[2,:]) - (dq[2,:].*(dq[1,:].*(sin_q[2,:]))));
+	row_vector[N] x16 = dq[3,:].*((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))) + (ddq[1,:].*(sin_q[2,:]) + dq[2,:].*(dq[1,:].*(cos_q[2,:]))).*(cos_q[3,:]) + (ddq[1,:].*(cos_q[2,:]) - (dq[2,:].*(dq[1,:].*(sin_q[2,:])))).*(sin_q[3,:]);
+	row_vector[N] x18 = dq[3,:].*(-((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:]))) - (ddq[1,:].*(sin_q[2,:]) + dq[2,:].*(dq[1,:].*(cos_q[2,:]))).*(sin_q[3,:]) + (ddq[1,:].*(cos_q[2,:]) - (dq[2,:].*(dq[1,:].*(sin_q[2,:])))).*(cos_q[3,:]);
+	row_vector[N] x23 = -0.8*((dq[2,:]).*(dq[2,:])) + (9.81*(sin_q[2,:])) - 0.8*(((dq[1,:].*(cos_q[2,:]))).*((dq[1,:].*(cos_q[2,:]))));
+	row_vector[N] x24 = (0.8*ddq[2,:] + 0.8*(dq[1,:].*(sin_q[2,:])).*(dq[1,:].*(cos_q[2,:])) + (9.81*(cos_q[2,:]))).*(cos_q[3,:]) + x23.*(-(sin_q[3,:]));
+	row_vector[N] x26 = ((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))).*(dq[2,:] + dq[3,:]);
+	row_vector[N] x27 = (dq[2,:] + dq[3,:]).*((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:]));
+	row_vector[N] x28 = -((((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:]))).*(((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:]))));
+	row_vector[N] x29 = -((((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:])))).*(((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:])))));
+	row_vector[N] x33 = (0.8*ddq[2,:] + 0.8*(dq[1,:].*(sin_q[2,:])).*(dq[1,:].*(cos_q[2,:])) + (9.81*(cos_q[2,:]))).*(sin_q[3,:]) + x23.*(cos_q[3,:]);
+	row_vector[N] x37 = ((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))).*((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:]));
+	row_vector[N] x38 = -(((dq[2,:] + dq[3,:])).*((dq[2,:] + dq[3,:])));
 }
 parameters { 
 	real<lower=1e-6> r;
@@ -83,12 +65,15 @@ transformed parameters {
 }
 model {
 	matrix[dof, N] tau_hat;
-		row_vector[N] x27 = params[24]*x23 + params[26]*x20 + params[27]*x10 - params[29]*x11 + params[31]*x17 + x19.*(params[25]*x18 + params[27]*x22 + params[28]*x24) + x24.*(params[23]*x18 + params[24]*x22 + params[25]*x24);
-	row_vector[N] x30 = params[23]*x23 + params[24]*x20 + params[25]*x10 + params[30]*x11 - params[31]*x28 + x22.*(params[25]*x18 + params[27]*x22 + params[28]*x24) - x24.*(params[24]*x18 + params[26]*x22 + params[27]*x24);
-	row_vector[N] x38 = params[25]*x23 + params[27]*x20 + params[28]*x10 + params[29]*x28 - params[30]*x17 + x18.*(params[24]*x18 + params[26]*x22 + params[27]*x24) - x22.*(params[23]*x18 + params[24]*x22 + params[25]*x24);
-	tau_hat[1,:] = ddq[1,:]*params[6] + dq[1,:]*params[11] + x0.*(ddq[2,:]*params[16] + dq[2,:].*(dq[2,:]*params[14] + params[12]*x5 + params[13]*x3) + params[13]*x4 + params[15]*x7 + params[20]*x15 - 0.8*params[29]*(-x20 + x35) - 0.8*params[30]*(x23 + x32) - 0.8*params[31]*(x33 + x34) - 0.8*params[32]*x11 + x12.*x30 + x14.*x27 - x5.*(dq[2,:]*params[17] + params[14]*x5 + params[16]*x3)) + x2.*(ddq[2,:]*params[14] - dq[2,:].*(dq[2,:]*params[16] + params[13]*x5 + params[15]*x3) + params[12]*x4 + params[13]*x7 - params[20]*x1 + x14.*x30 + x21.*x27 + x3.*(dq[2,:]*params[17] + params[14]*x5 + params[16]*x3));
-	tau_hat[2,:] = ddq[2,:]*params[17] + dq[2,:]*params[22] + params[14]*x4 + params[16]*x7 + params[18]*x1 - params[19]*x15 + 0.8*x12.*(params[29]*(x34 + x36) + params[30]*(-x10 + x37) + params[31]*(x20 + x35) + params[32]*x17) + 0.8*x14.*(params[29]*(x10 + x37) + params[30]*(x33 + x36) + params[31]*(-x23 + x32) + params[32]*x28) - x3.*(dq[2,:]*params[14] + params[12]*x5 + params[13]*x3) + x38 + x5.*(dq[2,:]*params[16] + params[13]*x5 + params[15]*x3);
-	tau_hat[3,:] = dq[3,:]*params[33] + x38;
+		row_vector[N] x13 = params[25]*((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:])) + params[27]*((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))) + params[28]*(dq[2,:] + dq[3,:]);
+	row_vector[N] x14 = params[24]*((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:])) + params[26]*((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))) + params[27]*(dq[2,:] + dq[3,:]);
+	row_vector[N] x25 = params[23]*x16 + params[24]*x18 + params[25]*(ddq[2,:] + ddq[3,:]) + params[30]*x5 - params[31]*x24 + ((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))).*x13 - (dq[2,:] + dq[3,:]).*x14;
+	row_vector[N] x32 = params[23]*((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:])) + params[24]*((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))) + params[25]*(dq[2,:] + dq[3,:]);
+	row_vector[N] x34 = params[24]*x16 + params[26]*x18 + params[27]*(ddq[2,:] + ddq[3,:]) - params[29]*x5 + params[31]*x33 + (dq[2,:] + dq[3,:]).*x32 + x13.*(-((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:])));
+	row_vector[N] x36 = params[25]*x16 + params[27]*x18 + params[28]*(ddq[2,:] + ddq[3,:]) + params[29]*x24 - params[30]*x33 - ((dq[1,:].*(sin_q[2,:])).*(-(sin_q[3,:])) + (cos_q[3,:]).*(dq[1,:].*(cos_q[2,:]))).*x32 + ((dq[1,:].*(sin_q[2,:])).*(cos_q[3,:]) + (dq[1,:].*(cos_q[2,:])).*(sin_q[3,:])).*x14;
+	tau_hat[1,:] = ddq[1,:]*params[6] + dq[1,:]*params[11] + (sin_q[2,:]).*(ddq[2,:]*params[14] - dq[2,:].*(dq[2,:]*params[16] + params[13]*(dq[1,:].*(sin_q[2,:])) + params[15]*(dq[1,:].*(cos_q[2,:]))) + params[12]*(ddq[1,:].*(sin_q[2,:]) + dq[2,:].*(dq[1,:].*(cos_q[2,:]))) + params[13]*(ddq[1,:].*(cos_q[2,:]) - (dq[2,:].*(dq[1,:].*(sin_q[2,:])))) - params[20]*(9.81*(cos_q[2,:])) + x25.*(cos_q[3,:]) + (dq[2,:]*params[17] + params[14]*(dq[1,:].*(sin_q[2,:])) + params[16]*(dq[1,:].*(cos_q[2,:]))).*(dq[1,:].*(cos_q[2,:])) + x34.*(-(sin_q[3,:]))) + (cos_q[2,:]).*(ddq[2,:]*params[16] + dq[2,:].*(dq[2,:]*params[14] + params[12]*(dq[1,:].*(sin_q[2,:])) + params[13]*(dq[1,:].*(cos_q[2,:]))) + params[13]*(ddq[1,:].*(sin_q[2,:]) + dq[2,:].*(dq[1,:].*(cos_q[2,:]))) + params[15]*(ddq[1,:].*(cos_q[2,:]) - (dq[2,:].*(dq[1,:].*(sin_q[2,:])))) + params[20]*(9.81*(sin_q[2,:])) - 0.8*params[29]*(-x18 + x27) - 0.8*params[30]*(x16 + x26) - 0.8*params[31]*(x28 + x29) - 0.8*params[32]*x5 - (dq[1,:].*(sin_q[2,:])).*(dq[2,:]*params[17] + params[14]*(dq[1,:].*(sin_q[2,:])) + params[16]*(dq[1,:].*(cos_q[2,:]))) + x25.*(sin_q[3,:]) + x34.*(cos_q[3,:]));
+	tau_hat[2,:] = ddq[2,:]*params[17] + dq[2,:]*params[22] + params[14]*(ddq[1,:].*(sin_q[2,:]) + dq[2,:].*(dq[1,:].*(cos_q[2,:]))) + params[16]*(ddq[1,:].*(cos_q[2,:]) - (dq[2,:].*(dq[1,:].*(sin_q[2,:])))) + params[18]*(9.81*(cos_q[2,:])) - params[19]*(9.81*(sin_q[2,:])) + (dq[1,:].*(sin_q[2,:])).*(dq[2,:]*params[16] + params[13]*(dq[1,:].*(sin_q[2,:])) + params[15]*(dq[1,:].*(cos_q[2,:]))) - (dq[2,:]*params[14] + params[12]*(dq[1,:].*(sin_q[2,:])) + params[13]*(dq[1,:].*(cos_q[2,:]))).*(dq[1,:].*(cos_q[2,:])) + x36 + 0.8*(cos_q[3,:]).*(params[29]*((ddq[2,:] + ddq[3,:]) + x37) + params[30]*(x28 + x38) + params[31]*(-x16 + x26) + params[32]*x24) + 0.8*(sin_q[3,:]).*(params[29]*(x29 + x38) + params[30]*(-(ddq[2,:] + ddq[3,:]) + x37) + params[31]*(x18 + x27) + params[32]*x33);
+	tau_hat[3,:] = dq[3,:]*params[33] + x36;
 	r ~ cauchy(0, 1.0);
 	for (d in 1:dof){
 		r_com[d] ~ cauchy(0, 1.0);
@@ -103,7 +88,7 @@ model {
 	eig31 ~ cauchy(0, 1);
 	eig32 ~ cauchy(0, 1);
 	eig33 ~ cauchy(0, 1);
-	to_vector(tau) ~ normal(to_vector(tau_hat), r);
-//	tau[2, :] ~ normal(tau_hat[2, :], r);
-//	tau[3, :] ~ normal(tau_hat[3, :], r);
+	tau[1, :] ~ normal(tau_hat[1, :], r);
+	tau[2, :] ~ normal(tau_hat[2, :], r);
+	tau[3, :] ~ normal(tau_hat[3, :], r);
 }

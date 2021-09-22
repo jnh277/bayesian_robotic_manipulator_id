@@ -11,7 +11,7 @@ import os
 from cmdstanpy import cmdstan_path, CmdStanModel, set_cmdstan_path
 
 set_cmdstan_path('../cmdstan')
-stan_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_auto.stan')
+stan_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_par.stan')
 data_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof.data.json')
 
 
@@ -367,12 +367,17 @@ stan_data = {
     'q':q.tolist(),
     'dq':dq.tolist(),
     'ddq':ddq.tolist(),
-    'tau':tau_m.tolist(),
+    'tau':(tau_m.T).tolist(),
+    'grainsize':int(T // 1)
 }
+
+# export STAN_NUM_THREADS=4
+# ./robot_3dof_par sample num_threads=8 data file=robot_3dof.data.json
 
 with open(data_file, 'w') as outfile:
     json.dump(stan_data, outfile)
 
+1/0
 r_com = np.vstack((r_1,r_2,r_3))
 def init_function():
     output = dict(m=[m_1*np.random.uniform(0.8,1.2),m_2*np.random.uniform(0.8,1.2),m_2 * np.random.uniform(0.8, 1.2)],
@@ -383,9 +388,9 @@ init = [init_function(),init_function(),init_function(),init_function()]
 
 
 
-model = CmdStanModel(stan_file=stan_file)
+model = CmdStanModel(stan_file=stan_file, cpp_options={"STAN_THREADS": True})
 time_start = time.time()
-fit = model.sample(chains=1, data=data_file, iter_warmup=6000, iter_sampling=2000, show_progress=True)
+fit = model.sample(chains=1, data=data_file, iter_warmup=6000, iter_sampling=2000, threads_per_chain=8, parallel_chains=8)
 time_finish = time.time()
 print('Sampling took ', time_finish-time_start, ' seconds')
 
@@ -486,7 +491,7 @@ num_plots = num_lumped // 9 + 1
 for i in range(num_plots):
     for j in range(min(9, num_lumped - 9 * i)):
         plt.subplot(3, 3, j + 1)
-        plt.hist(lumped_param_dict[lumped_params[j + 9 * i]].flatten(), bins=30, density=True)
+        plt.hist(lumped_param_dict[lumped_params[j + 9 * i]], bins=30, density=True)
         plt.axvline(true_lumped_param_dict[lumped_params[j + 9 * i]], linestyle='--', linewidth=2, color='k')
         plt.xlabel(lumped_params[j + 9 * i])
     plt.tight_layout()

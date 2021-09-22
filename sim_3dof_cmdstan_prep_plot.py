@@ -1,18 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# import stan
 from numpy import cos, sin
-import tqdm
 from mpl_toolkits import mplot3d
 import time
 from itertools import product, combinations
 import json
 import os
 from cmdstanpy import cmdstan_path, CmdStanModel, set_cmdstan_path
+import pandas as pd
 
 set_cmdstan_path('../cmdstan')
-stan_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_auto.stan')
+stan_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_par.stan')
 data_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof.data.json')
+init_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_init.data.json')
 
 
 dof = 3
@@ -33,7 +33,7 @@ r_2 = np.array([a1/2, 0, 0])
 r_3 = np.array([a2/2, 0, 0])
 fv_1 = 0.01
 fv_2 = 0.2
-fv_3 = 0.1 
+fv_3 = 0.1
 
 I_all = [I_1, I_2, I_3]
 r_all = [r_1, r_2, r_3]
@@ -367,29 +367,61 @@ stan_data = {
     'q':q.tolist(),
     'dq':dq.tolist(),
     'ddq':ddq.tolist(),
-    'tau':tau_m.tolist(),
+    'tau':(tau_m.T).tolist(),
+    'grainsize':int(T // 8)
 }
+
+
 
 with open(data_file, 'w') as outfile:
     json.dump(stan_data, outfile)
 
+
 r_com = np.vstack((r_1,r_2,r_3))
-def init_function():
-    output = dict(m=[m_1*np.random.uniform(0.8,1.2),m_2*np.random.uniform(0.8,1.2),m_2 * np.random.uniform(0.8, 1.2)],
-                  r_com=r_com*np.random.uniform(0.8,1.2,r_com.shape))
-    return output
 
-init = [init_function(),init_function(),init_function(),init_function()]
+for i in range(2):
+    def init_function():
+        output = dict(m=[m_1*np.random.uniform(0.8,1.2),m_2*np.random.uniform(0.8,1.2),m_2 * np.random.uniform(0.8, 1.2)],
+                      r_com=(r_com*np.random.uniform(0.8,1.2,r_com.shape)).tolist())
+        return output
+
+
+    init_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_init_{}.data.json'.format(i))
+    with open(init_file, 'w') as outfile:
+        json.dump(init_function(), outfile)
+
+# def init_function():
+#     output = dict(m=[m_1,m_2,m_2],
+#                   r_com=(r_com).tolist())
+#     return output
 
 
 
-model = CmdStanModel(stan_file=stan_file)
-time_start = time.time()
-fit = model.sample(chains=4, data=data_file, iter_warmup=6000, iter_sampling=2000, threads_per_chain=8)
-time_finish = time.time()
-print('Sampling took ', time_finish-time_start, ' seconds')
+1/0     # RUN CMDSTAN SAMPLING HERE
+# export STAN_NUM_THREADS=4
+#
+# for i in {0..1}
+#     do
+#       ./robot_3dof_par sample num_warmup=6000 num_samples=1000 num_threads=8 \
+#       data file=robot_3dof.data.json \
+#       init=robot_3dof_init_${i}.data.json \
+#       output file=output_${i}.csv &
+#     done
 
-traces = fit.draws_pd()
+frames = []
+for i in range(2):
+    frames.append(pd.read_csv(os.path.join(cmdstan_path(),'models','output_{}.csv'.format(i)),header=45,skiprows=[46,47,48,49]).dropna())
+
+traces = pd.concat(frames)
+# traces = pd.read_csv(os.path.join(cmdstan_path(),'models','output_{}.csv'.format(i)),header=45,skiprows=[46,47,48,49])
+# traces.dropna(inplace=True)
+# model = CmdStanModel(stan_file=stan_file, cpp_options={"STAN_THREADS": True})
+# time_start = time.time()
+# fit = model.sample(chains=1, data=data_file, iter_warmup=6000, iter_sampling=2000, threads_per_chain=8, parallel_chains=8)
+# time_finish = time.time()
+# print('Sampling took ', time_finish-time_start, ' seconds')
+#
+# traces = fit.draws_pd()
 
 # plotting lumped params
 lumped_params = ["L_1zz + L_2yy + L_3yy + 16*m_3/25",
@@ -428,29 +460,29 @@ for param in param_list:
     if param[0:2] == "l_":
         dig=int(param[2])
         if param[3] == 'x':
-            param_dict[param] = traces['l['+str(dig)+',1]']
+            param_dict[param] = traces['l.'+str(dig)+'.1'].to_numpy()
         if param[3] == 'y':
-            param_dict[param] = traces['l['+str(dig)+',2]']
+            param_dict[param] = traces['l.'+str(dig)+'.2'].to_numpy()
         if param[3] == 'z':
-            param_dict[param] = traces['l['+str(dig)+',3]']
+            param_dict[param] = traces['l.'+str(dig)+'.3'].to_numpy()
     elif param[0:2] == "L_":
         dig=int(param[2])
         name=param[0:1]+param[3:]
-        param_dict[param] = traces[name+'['+str(dig)+']']
+        param_dict[param] = traces[name+'.'+str(dig)].to_numpy()
     elif param[0:2] == "m_":
         dig=int(param[-1])-1
-        param_dict[param] = traces['m['+str(dig)+']']
+        param_dict[param] = traces['m.'+str(dig)].to_numpy()
     elif param[0] == "f":
         name=param[0:2]
         dig=int(param[-1])
-        param_dict[param] = traces[name+'['+str(dig)+']']
+        param_dict[param] = traces[name+'.'+str(dig)].to_numpy()
     elif param[0] == "Ia":
         name=param[0:2]
         dig=int(param[-1])
-        param_dict[param] = traces[name+'['+str(dig)+']']
+        param_dict[param] = traces[name+'.'+str(dig)].to_numpy()
     else:
         print("error occured")
-        param_dict[param] = traces[param]
+        param_dict[param] = traces[param].to_numpy()
 
 expressions_list = lumped_params.copy()
 for i in range(len(expressions_list)):

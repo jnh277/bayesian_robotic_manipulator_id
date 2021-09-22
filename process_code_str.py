@@ -38,6 +38,67 @@ def compress_code(code_str):
 
     return code_str_new
 
+
+def compress_code2(LHS_np, RHS_np, LHS_p, RHS_p):
+    # compress the _np lines
+    LHS_np_new = []
+    RHS_np_new = []
+    for i in range(len(LHS_np)-1):
+        z = re.search('x\d*',LHS_np[i])        # look for a variable name
+        if z: # if variable see if we want to compress
+            var = z.group()
+            if len(RHS_np[i]) < 100:    # if RHS is small then compress
+                for j in range(i+1,len(RHS_np)):
+                    RHS_np[j] = re.sub(var+'(?!\d)', '('+RHS_np[i][1:-1]+')',RHS_np[j])
+                # also need to make substitutiones in the _p lines
+                for j in range(len(RHS_p)):
+                    RHS_p[j] = re.sub(var+'(?!\d)', '('+RHS_np[i][1:-1]+')',RHS_p[j])
+
+            else:   # else make this a new line in code
+                # var_list_new.append(var)
+                LHS_np_new.append(LHS_np[i])
+                RHS_np_new.append(RHS_np[i])
+        else:   # if doesnt contain var then copy into LHS new and RHS new
+            LHS_np_new.append(LHS_np[i])
+            RHS_np_new.append(RHS_np[i])
+    # copy across final line
+    for k in range(i+1, len(LHS_np)):
+        LHS_np_new.append(LHS_np[k])
+        RHS_np_new.append(RHS_np[k])
+
+    # compress the _p lines
+    LHS_p_new = []
+    RHS_p_new = []
+    for i in range(len(LHS_p)-1):
+        z = re.search('x\d*',LHS_p[i])        # look for a variable name
+        if z: # if variable see if we want to compress
+            var = z.group()
+            if len(RHS_p[i]) < 100:    # if RHS is small then compress
+                for j in range(i+1,len(RHS_p)):
+                    RHS_p[j] = re.sub(var+'(?!\d)', '('+RHS_p[i][1:-1]+')',RHS_p[j])
+
+            else:   # else make this a new line in code
+                # var_list_new.append(var)
+                LHS_p_new.append(LHS_p[i])
+                RHS_p_new.append(RHS_p[i])
+        else:   # if doesnt contain var then copy into LHS new and RHS new
+            LHS_p_new.append(LHS_p[i])
+            RHS_p_new.append(RHS_p[i])
+    # copy across final line
+    for k in range(i+1, len(LHS_p)):
+        LHS_p_new.append(LHS_p[k])
+        RHS_p_new.append(RHS_p[k])
+
+    # put everything back together again
+    code_p = ""
+    code_np = ""
+    for i in range(len(LHS_np_new)):
+        code_np += LHS_np_new[i] + '=' + RHS_np_new[i] +"\n"
+
+    for i in range(len(LHS_p_new)):
+        code_p += LHS_p_new[i] + '=' + RHS_p_new[i] +"\n"
+    return code_np, code_p
+
 def sort_code_str(code_str):
     tmp = re.split('\n',code_str)
     LHS = []
@@ -86,7 +147,7 @@ def sort_code_str(code_str):
     for i in range(len(LHS_p)):
         code_p += LHS_p[i] + '=' + RHS_p[i] +"\n"
 
-    return code_np, code_p
+    return code_np, code_p, LHS_np, RHS_np, LHS_p, RHS_p
 
 def c_to_stan(code_str, dof, num_params):
     code_str = code_str.replace("  ", "\t")     # replace double spaces with tabs
@@ -137,22 +198,14 @@ def c_to_stan(code_str, dof, num_params):
 
 
     # attempt to split more intelligently
-    trans_data_code, model_code = sort_code_str(code_str)
-    # ## split based on where param first gets called
-    # for line in code_str.split('\n'):
-    #     if line.find('param') >= 0:
-    #         first_param_line = line
-    #         break
-    # idx = code_str.index(first_param_line)
-    #
-    # code_str = code_str.replace('//\n','')
-    # trans_data_code = code_str[:idx]
-    # model_code = code_str[idx:]
+    _, _, LHS_np, RHS_np, LHS_p, RHS_p = sort_code_str(code_str)
+    trans_data_code, model_code = compress_code2(LHS_np, RHS_np, LHS_p, RHS_p)
 
-    model_code_new = compress_code(model_code)
+
+    # model_code_new = compress_code(model_code)
     # trans_data_code_new = compress_code(trans_data_code)  # can't compress this as it doesnt feed through to model code
 
-    return trans_data_code, model_code_new
+    return trans_data_code, model_code
 
 
 def create_param_block(dof, frictionmodel=None,driveinertiamodel=None):

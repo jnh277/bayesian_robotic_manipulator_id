@@ -12,6 +12,7 @@ from cmdstanpy import cmdstan_path, CmdStanModel, set_cmdstan_path
 
 set_cmdstan_path('../cmdstan')
 stan_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof_auto.stan')
+# stan_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof.stan')
 data_file = os.path.join(cmdstan_path(), 'models', 'robot_3dof.data.json')
 
 
@@ -304,7 +305,7 @@ def inverse_dynamics(parms, q, dq, ddq):
     return np.array(tau_out)
 
 dt = 0.01
-Tsim = 5
+Tsim = 2
 T = np.round(Tsim/dt).astype(int)
 
 q = np.zeros((3, T+1))
@@ -368,6 +369,8 @@ stan_data = {
     'dq':dq.tolist(),
     'ddq':ddq.tolist(),
     'tau':tau_m.tolist(),
+    'a1':a1,
+    'd0':d0,
 }
 
 with open(data_file, 'w') as outfile:
@@ -385,7 +388,7 @@ init = [init_function(),init_function(),init_function(),init_function()]
 
 model = CmdStanModel(stan_file=stan_file)
 time_start = time.time()
-fit = model.sample(chains=4, data=data_file, iter_warmup=6000, iter_sampling=2000, threads_per_chain=8)
+fit = model.sample(chains=4, data=data_file, iter_warmup=6000, iter_sampling=2000)
 time_finish = time.time()
 print('Sampling took ', time_finish-time_start, ' seconds')
 
@@ -423,7 +426,7 @@ for param_str in lumped_params:
 param_list = set(param_list)
 param_dict = dict()
 
-
+# for auto code
 for param in param_list:
     if param[0:2] == "l_":
         dig=int(param[2])
@@ -451,6 +454,32 @@ for param in param_list:
     else:
         print("error occured")
         param_dict[param] = traces[param]
+
+# for non auto code
+# for param in param_list:
+#     if param[0:2] == "l_":
+#         dig=int(param[2])
+#         if param[3] == 'x':
+#             param_dict[param] = traces['l_'+str(dig)+'[1]']
+#         if param[3] == 'y':
+#             param_dict[param] = traces['l_'+str(dig)+'[2]']
+#         if param[3] == 'z':
+#             param_dict[param] = traces['l_'+str(dig)+'[3]']
+#     elif param[0:2] == "L_":
+#         param_dict[param] = traces[param]
+#     elif param[0:2] == "m_":
+#         param_dict[param] = traces[param]
+#     elif param[0] == "f":
+#         name=param[0:2]
+#         dig=int(param[-1])
+#         param_dict[param] = traces[param]
+#     elif param[0] == "Ia":
+#         name=param[0:2]
+#         dig=int(param[-1])
+#         param_dict[param] = traces[name+'['+str(dig)+']']
+#     else:
+#         print("error occured")
+#         param_dict[param] = traces[param]
 
 expressions_list = lumped_params.copy()
 for i in range(len(expressions_list)):

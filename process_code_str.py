@@ -198,9 +198,12 @@ def c_to_stan(code_str, dof, num_params):
 
 
     # attempt to split more intelligently
-    _, _, LHS_np, RHS_np, LHS_p, RHS_p = sort_code_str(code_str)
-    trans_data_code, model_code = compress_code2(LHS_np, RHS_np, LHS_p, RHS_p)
+    # _, _, LHS_np, RHS_np, LHS_p, RHS_p = sort_code_str(code_str)
+    # trans_data_code, model_code = compress_code2(LHS_np, RHS_np, LHS_p, RHS_p)
 
+    # trans_data_code, model_code, LHS_np, RHS_np, LHS_p, RHS_p = sort_code_str(code_str)
+    model_code = code_str
+    trans_data_code = ""
 
     # model_code_new = compress_code(model_code)
     # trans_data_code_new = compress_code(trans_data_code)  # can't compress this as it doesnt feed through to model code

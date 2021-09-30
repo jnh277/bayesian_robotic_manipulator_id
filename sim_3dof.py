@@ -4,7 +4,8 @@ import stan
 from numpy import cos, sin
 from mpl_toolkits import mplot3d
 from itertools import product, combinations
-
+import pickle
+import pandas as pd
 
 dof = 3
 # first link is jsut a rotating base
@@ -381,6 +382,12 @@ f = open('stan/robot_3dof.stan', 'r')
 model_code = f.read()
 posterior = stan.build(model_code, data=stan_data)
 traces = posterior.sample(init=init,num_samples=2000, num_warmup=8000, num_chains=4)
+
+df = traces.to_frame()
+df.to_csv('results/3dof_fit.csv')
+
+with open('results/3dof_fit.pkl', 'wb') as file:
+    pickle.dump(traces, file)
 
 # plotting lumped params
 lumped_params = ["L_1zz + L_2yy + L_3yy + 16*m_3/25",

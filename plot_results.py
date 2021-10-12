@@ -177,4 +177,10 @@ for i in range(num_plots):
     fig.savefig('figures/lumped_params_'+str(i)+'.png',bbox_inches='tight')
     fig.show()
 
+rhat = traces['r']
+
+plt.hist(rhat,bins=30, density=True)
+plt.axvline(0.01,linestyle='--',color='k',linewidth=2)
+plt.xlabel('sigma')
+plt.show()
 
